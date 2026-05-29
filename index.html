@@ -198,6 +198,7 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
   table.matrix th.row{min-width:140px}
 }
 </style>
+  <script src="data.js"></script>
 </head>
 <body>
 <main class="app">
@@ -327,13 +328,16 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
 // データは data.json から非同期で読み込む
 let DATASET = null, ITEMS = null, FAMILIES = null, RECOMMENDED = null;
 
-async function loadDataset(){
-  const res = await fetch('data.json');
-  if(!res.ok) throw new Error('data.json の読み込みに失敗しました: ' + res.status);
-  DATASET = await res.json();
+function loadDataset(){
+  // data.js が先に読み込まれ、window.DATASET にデータが入っている前提
+  if(!window.DATASET){
+    throw new Error('data.js が読み込まれていません。index.html と同じフォルダに data.js を置いてください。');
+  }
+  DATASET = window.DATASET;
   ITEMS = DATASET.items;
   FAMILIES = DATASET.families;
   RECOMMENDED = DATASET.recommended;
+  return Promise.resolve();
 }
 const TAGS = DATASET.tags;
 const AM = DATASET.amMatrix;
@@ -838,10 +842,8 @@ loadDataset()
   .catch(err => {
     document.body.innerHTML = '<div style="padding:24px;color:#dc2626;font-family:system-ui">'
       + 'データの読み込みに失敗しました: ' + (err && err.message ? err.message : err)
-      + '<br><br>このページは <code>data.json</code> を同じフォルダから fetch しています。'
-      + 'ローカルで開く場合は、<code>file://</code> ではなく簡易サーバー経由で開いてください。'
-      + '<br>例: ターミナルで <code>python3 -m http.server</code> を実行し、ブラウザで '
-      + '<code>http://localhost:8000/ai_agent_catalog.html</code> を開きます。'
+      + '<br><br>このページは <code>data.js</code> を同じフォルダに置いて読み込みます。'
+      + '<br><code>index.html</code> と <code>data.js</code> が同じフォルダにあるか確認してください。'
       + '</div>';
     console.error(err);
   });
