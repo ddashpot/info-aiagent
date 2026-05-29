@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>AIエージェント設計カタログ — 構成 × メモリ × ツール | Agent Platform</title>
-<meta name="description" content="AIエージェントの構成（A）・メモリ設計（M）・ツールユース（T）をMECEに整理した設計カタログ。用途から推奨構成を探し、相性マトリクスと組合せビルダーで設計判断を支援します。" />
+<meta name="description" content="AIエージェントの構成（A）・メモリ設計（M）・ツールユース（T）をMECEに整理した設計カタログ。用途から推奨構成を探し、相性マトリクスとコンポーザーで設計判断を支援します。" />
 <meta name="theme-color" content="#16181d" />
 <meta name="color-scheme" content="light" />
 <link rel="canonical" href="./" />
@@ -16,13 +16,13 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Agent Platform" />
 <meta property="og:title" content="AIエージェント設計カタログ — 構成 × メモリ × ツール" />
-<meta property="og:description" content="構成・メモリ・ツールをMECEに整理。用途から推奨構成を探し、相性マトリクスと組合せビルダーで設計判断を支援します。" />
+<meta property="og:description" content="構成・メモリ・ツールをMECEに整理。用途から推奨構成を探し、相性マトリクスとコンポーザーで設計判断を支援します。" />
 <meta property="og:image" content="./assets/ogp.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="AIエージェント設計カタログ — 構成 × メモリ × ツール" />
-<meta name="twitter:description" content="構成・メモリ・ツールをMECEに整理。用途・マトリクス・ビルダーで設計判断を支援。" />
+<meta name="twitter:description" content="構成・メモリ・ツールをMECEに整理。用途・マトリクス・コンポーザーで設計判断を支援。" />
 <meta name="twitter:image" content="./assets/ogp.png" />
 
 <!-- 構造化データ (#8) -->
@@ -371,25 +371,21 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 
 .rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:11px;margin:6px 0}
 
-.rc-pair{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;
-  display:flex;flex-direction:column;transition:.15s}
-.rc-pair:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.rc-pair{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.15s}
+.rc-pair:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--line-2)}
 
-.rc-pair__risk{background:var(--no-bg);padding:11px 13px;border-bottom:1px dashed #e7b3ac}
-.rc-pair__risk h5{margin:0 0 5px;font-size:12px;color:#9a2d20;font-weight:700;display:flex;align-items:center;gap:6px}
-.rc-pair__risk p{margin:0;font-size:12.5px;color:#7c2418;line-height:1.6}
-
-.rc-pair__sep{display:flex;align-items:center;justify-content:center;padding:4px 0;background:var(--paper);
-  font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.14em;color:var(--muted)}
-
-.rc-pair__control{background:var(--rec-bg);padding:11px 13px}
-.rc-pair__control h5{margin:0 0 5px;font-size:12px;color:var(--rec);font-weight:700;display:flex;align-items:center;gap:6px}
-.rc-pair__control p{margin:0;font-size:12.5px;color:#14532d;line-height:1.6}
-
-.rc-pair__id{display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:1px 7px;
-  border-radius:999px;font-family:var(--font-mono);font-size:10px;font-weight:700;color:#fff}
-.rc-pair__risk .rc-pair__id{background:var(--no)}
-.rc-pair__control .rc-pair__id{background:var(--rec)}
+.rc-pair__row{display:grid;grid-template-columns:64px 1fr;gap:14px;padding:14px 16px 14px 18px;position:relative}
+.rc-pair__row::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0}
+.rc-pair__row--risk::before{background:var(--no)}
+.rc-pair__row--ctl{border-top:1px solid var(--line)}
+.rc-pair__row--ctl::before{background:var(--rec)}
+.rc-pair__meta{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.rc-pair__kind{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:7px;white-space:nowrap}
+.rc-pair__row--risk .rc-pair__kind{color:var(--no);background:var(--no-bg)}
+.rc-pair__row--ctl  .rc-pair__kind{color:var(--rec);background:var(--rec-bg)}
+.rc-pair__id{font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em}
+.rc-pair__text{margin:0;font-size:13px;line-height:1.7;color:var(--ink)}
+.rc-pair__row--ctl .rc-pair__text{color:var(--ink-2)}
 
 .rc-group{margin:10px 0 16px}
 .rc-group__head{display:flex;align-items:center;gap:9px;margin:0 0 9px;padding:8px 12px;background:var(--paper-2);
@@ -401,12 +397,12 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 .rc-group__head .rc-group__name{color:var(--muted);font-weight:500}
 .rc-group__head .rc-group__count{margin-left:auto;color:var(--muted);font-weight:500;font-size:11px;font-family:var(--font-mono)}
 
-.rc-usecase-block{margin:18px 0 0;padding:16px;background:var(--no-bg);border:1.5px solid #e09b91;border-radius:14px}
-.rc-usecase-block > h4{margin:0 0 5px;font-family:var(--font-display);font-size:15px;color:#9a2d20;font-weight:600;
+.rc-usecase-block{margin:18px 0 0;padding:16px 16px 16px 18px;background:var(--surface);border:1px solid var(--line);
+  border-left:3px solid var(--no);border-radius:14px}
+.rc-usecase-block > h4{margin:0 0 5px;font-family:var(--font-display);font-size:15.5px;color:#9a2d20;font-weight:600;
   display:flex;align-items:center;gap:8px}
-.rc-usecase-block > h4::before{content:"⚠";font-size:18px}
-.rc-usecase-block__note{margin:0 0 12px;font-size:12px;color:#8b2c1f;line-height:1.6}
-.rc-usecase-block .rc-pair{border:1.5px solid #e7b3ac}
+.rc-usecase-block > h4::before{content:"⚠";font-size:17px}
+.rc-usecase-block__note{margin:0 0 12px;font-size:12px;color:var(--ink-2);line-height:1.6}
 
 .usecase-risks{background:var(--no-bg);border-left:3px solid var(--no)}
 .usecase-risks h3{color:#9a2d20}
@@ -484,21 +480,20 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
   <header class="head">
     <span class="eyebrow">Agent × Memory × Tool Catalog</span>
     <h1>AIエージェント設計カタログ</h1>
-    <p>構成・ツールユース・メモリ設計をMECEに整理し、用途から組合せを探したり、相性マトリクスや組合せビルダーで設計判断を支援します。</p>
   </header>
 
   <nav class="topnav" id="topnav" aria-label="ビュー切替">
     <button data-mode="usecases" type="button">用途から探す</button>
     <button data-mode="search" type="button">パターン辞書</button>
     <button data-mode="matrix" type="button">相性マトリクス</button>
-    <button data-mode="builder" type="button">組合せビルダー</button>
+    <button data-mode="builder" type="button">コンポーザー</button>
   </nav>
 
   <!-- === Usecases View === -->
   <section id="usecasesView" class="view">
     <div class="uc-intro">
       <h2>用途から探す</h2>
-      <p>業務シナリオごとに推奨される A×M×T の組合せを掲載しています。タグで絞り込み、カードをタップすると組合せビルダーで詳細を確認できます。</p>
+      <p>業務シナリオごとに推奨される A×M×T の組合せを掲載しています。タグで絞り込み、カードをタップするとコンポーザーで詳細を確認できます。</p>
       <div class="tagrow" id="tagRow"></div>
     </div>
     <div id="ucGrid" class="uc-grid"></div>
@@ -544,7 +539,7 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
   <section id="matrixView" class="view">
     <div class="uc-intro" style="background:linear-gradient(135deg,#fff,#fef3c7)">
       <h2>相性マトリクス</h2>
-      <p>エージェント構成と、メモリ設計・ツールユースの相性を5段階で可視化します。セルをタップすると該当組合せをビルダーで開きます。</p>
+      <p>エージェント構成と、メモリ設計・ツールユースの相性を5段階で可視化します。セルをタップすると該当組合せをコンポーザーで開きます。</p>
     </div>
     <div class="matrix-toggle">
       <button data-kind="am" class="active">A × メモリ</button>
@@ -562,9 +557,8 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 
   <!-- === Builder View === -->
   <section id="builderView" class="view">
-    <div class="uc-intro" style="background:linear-gradient(135deg,#fff,#ecfdf5)">
-      <h2>組合せビルダー</h2>
-      <p>A・M・T を選ぶと、相性、各フロー、リスクと対策をまとめて表示します。選んだ組合せはURLで共有できます。</p>
+    <div class="uc-intro">
+      <h2>コンポーザー</h2>
     </div>
     <div class="builder-grid">
       <div class="builder-slot">
@@ -600,7 +594,7 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
     </div>
     <div class="actions">
       <button class="btn sm" type="button" onclick="closeTip()">閉じる</button>
-      <button class="btn sm blue" type="button" id="tipOpenBuilder">ビルダーで開く</button>
+      <button class="btn sm blue" type="button" id="tipOpenBuilder">コンポーザーで開く</button>
     </div>
   </div>
 </div>
@@ -791,7 +785,7 @@ function renderUsecases(){
   }
   grid.innerHTML = items.map((r,i)=>{
     const a = getItem(r.A), m = getItem(r.M), t = getItem(r.T);
-    return `<article class="uc-card" tabindex="0" role="button" aria-label="${esc(r.usecase)} の組合せをビルダーで開く" style="animation-delay:${Math.min(i*40,360)}ms" data-trio="${esc(r.A)}+${esc(r.M)}+${esc(r.T)}">
+    return `<article class="uc-card" tabindex="0" role="button" aria-label="${esc(r.usecase)} の組合せをコンポーザーで開く" style="animation-delay:${Math.min(i*40,360)}ms" data-trio="${esc(r.A)}+${esc(r.M)}+${esc(r.T)}">
       <div class="uc-tags">${r.tags.map(x=>`<span class="pill">${esc(x)}</span>`).join('')}</div>
       <h4>${esc(r.usecase)}</h4>
       <p>${esc(r.summary)}</p>
@@ -800,7 +794,6 @@ function renderUsecases(){
         <span class="pill amber">M: ${esc(m?m.name:r.M)}</span>
         <span class="pill blue">T: ${esc(t?t.name:r.T)}</span>
       </div>
-      ${r.risksControls && r.risksControls.length ? `<div style="margin-top:10px;font-size:12px;color:#9a2d20;font-weight:700">この用途で組み合わせると出るリスク ${r.risksControls.length}件（ビルダーで確認）</div>` : ''}
     </article>`;
   }).join('');
   grid.querySelectorAll('[data-trio]').forEach(el=>{
@@ -891,7 +884,7 @@ function renderDetail(){
     <div class="detail">
       <div class="backrow">
         <button class="btn" onclick="history.back()">← 戻る</button>
-        <button class="btn blue" onclick="openBuilderFromDetail('${esc(x.id)}')">この${esc(domainName(x.domain).slice(0,1))}でビルダーを開く</button>
+        <button class="btn blue" onclick="openBuilderFromDetail('${esc(x.id)}')">この${esc(domainName(x.domain).slice(0,1))}でコンポーザーを開く</button>
         <span class="copy-note" id="copyNote"></span>
       </div>
       <div class="detail-head">
@@ -990,24 +983,24 @@ function useCasesHtml(items){
 function risksHtml(items){
   if(!items || !items.length) return '<p style="color:var(--muted);font-size:13px;margin:0">登録されたリスク・対策はありません。</p>';
   return `<p class="rc-section-head"><span class="pill red">この構成だけで起きるリスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">${items.length}件</span></p>
-    <p style="margin:0 0 8px;font-size:12px;color:#64748b">各カードは「想定されるリスク（上）→ 対策（下）」が1対1で対応します。</p>
+    <p style="margin:0 0 8px;font-size:12px;color:var(--muted)">各カードは「リスク」と、それに対応する「対策」が1対1で並びます。</p>
     <div class="rc-grid">${items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>`;
 }
 
 // 共通ヘルパー: リスクと対策を1枚の縦結合カードとして描画
 // label: バッジに出す識別子 (例: "1" / "A-1" / "M-2")。出所つきにすると複数グループでも一意に追える
 function rcPairHtml(r, label){
-  return `<div class="rc-pair">
-    <div class="rc-pair__risk">
-      <h5><span class="rc-pair__id">⚠ ${esc(String(label))}</span> 想定されるリスク</h5>
-      <p>${esc(r.risk)}</p>
+  const id = esc(String(label));
+  return `<article class="rc-pair">
+    <div class="rc-pair__row rc-pair__row--risk">
+      <div class="rc-pair__meta"><span class="rc-pair__kind">リスク</span><span class="rc-pair__id">${id}</span></div>
+      <p class="rc-pair__text">${esc(r.risk)}</p>
     </div>
-    <div class="rc-pair__sep">↓ 対策</div>
-    <div class="rc-pair__control">
-      <h5><span class="rc-pair__id">✓ ${esc(String(label))}</span> 対策（コントロール）</h5>
-      <p>${esc(r.control)}</p>
+    <div class="rc-pair__row rc-pair__row--ctl">
+      <div class="rc-pair__meta"><span class="rc-pair__kind">対策</span><span class="rc-pair__id">${id}</span></div>
+      <p class="rc-pair__text">${esc(r.control)}</p>
     </div>
-  </div>`;
+  </article>`;
 }
 function legendHtml(items){
   return `<div class="legend-grid">${(items||[]).map(l=>`<div class="itembox"><h4>${esc(l.symbol)}</h4><p>${esc(l.meaning)}</p></div>`).join('')}</div>`;
