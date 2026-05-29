@@ -189,12 +189,64 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
 .usecase-risks{background:linear-gradient(135deg,#fff,#fef2f2);border-left:5px solid var(--red)}
 .usecase-risks h3{color:#991b1b}
 
+/* === Risk & Control pair cards (v8.2 redesign) ===
+   1ペア=1カード（縦結合）。リスク(上、赤系) → 「↓ 対策」 → コントロール(下、緑系)。
+   階層識別: detail単独=neutral / builder統合=group化 / ユースケース固有=強調枠 */
+.rc-section-head{display:flex;align-items:center;gap:6px;margin:14px 0 8px;font-size:12.5px;font-weight:800;color:#475467;letter-spacing:.02em}
+.rc-section-head .pill{font-size:10.5px;padding:2px 8px}
+
+.rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin:6px 0}
+
+.rc-pair{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;box-shadow:var(--shadow-sm);transition:.15s}
+.rc-pair:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+
+.rc-pair__risk{background:#fef2f2;padding:10px 12px;border-bottom:1px dashed #fecaca}
+.rc-pair__risk h5{margin:0 0 4px;font-size:12px;color:#991b1b;font-weight:800;display:flex;align-items:center;gap:6px;letter-spacing:.02em}
+.rc-pair__risk p{margin:0;font-size:12.5px;color:#7f1d1d;line-height:1.55}
+
+.rc-pair__sep{display:flex;align-items:center;justify-content:center;padding:3px 0;background:#fafbfc;font-size:10px;font-weight:800;letter-spacing:.12em;color:#94a3b8}
+
+.rc-pair__control{background:#f0fdf4;padding:10px 12px}
+.rc-pair__control h5{margin:0 0 4px;font-size:12px;color:#166534;font-weight:800;display:flex;align-items:center;gap:6px;letter-spacing:.02em}
+.rc-pair__control p{margin:0;font-size:12.5px;color:#14532d;line-height:1.55}
+
+.rc-pair__id{display:inline-flex;align-items:center;justify-content:center;min-width:24px;padding:1px 7px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#fff}
+.rc-pair__risk .rc-pair__id{background:var(--red)}
+.rc-pair__control .rc-pair__id{background:var(--green)}
+
+/* Source group (builder統合ビュー: A/M/T 3グループ) */
+.rc-group{margin:10px 0 14px}
+.rc-group__head{display:flex;align-items:center;gap:8px;margin:0 0 8px;padding:7px 11px;background:#f1f5f9;border-radius:8px;font-size:12px;font-weight:800;color:#334155;letter-spacing:.02em}
+.rc-group__head .rc-group__tag{padding:2px 7px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.04em}
+.rc-group__head .rc-group__tag.a{background:var(--green2);color:#166534}
+.rc-group__head .rc-group__tag.m{background:var(--amber2);color:var(--amber)}
+.rc-group__head .rc-group__tag.t{background:var(--blue2);color:var(--blue)}
+.rc-group__head .rc-group__name{color:#475467;font-weight:700}
+.rc-group__head .rc-group__count{margin-left:auto;color:#94a3b8;font-weight:700;font-size:11px}
+
+/* Usecase-specific block (最重要・強調枠) */
+.rc-usecase-block{margin:18px 0 0;padding:14px 14px 12px;background:linear-gradient(135deg,#fef2f2,#fff5f5);border:2px solid var(--red);border-radius:14px;box-shadow:0 4px 18px rgba(220,38,38,.10)}
+.rc-usecase-block > h4{margin:0 0 4px;font-size:14.5px;color:#7f1d1d;font-weight:800;display:flex;align-items:center;gap:8px;letter-spacing:.01em}
+.rc-usecase-block > h4::before{content:"⚠";font-size:18px}
+.rc-usecase-block__note{margin:0 0 12px;font-size:12px;color:#991b1b;line-height:1.55}
+.rc-usecase-block .rc-pair{border:1.5px solid #fca5a5}
+.rc-usecase-block .rc-pair__risk{background:#fee2e2;border-bottom-color:#fca5a5}
+.rc-usecase-block .rc-pair__risk .rc-pair__id{background:#991b1b}
+.rc-usecase-block .rc-pair__sep{background:#fef2f2;color:#b91c1c}
+
+/* Memory general lists (非ペア観点として明示) */
+.memory-general{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:10px}
+.memory-general__note{margin:0 0 8px;font-size:11.5px;color:#92400e;font-weight:700;line-height:1.5;display:flex;align-items:flex-start;gap:6px}
+.memory-general__note::before{content:"ℹ";font-size:13px;flex-shrink:0;margin-top:1px}
+.memory-general .itembox{margin-bottom:0}
+
 @media(max-width:980px){
   .search-layout{grid-template-columns:1fr}
   .panel{position:static}
   .list,.two,.grid3,.legend-grid{grid-template-columns:1fr}
   .builder-grid,.compose-row{grid-template-columns:1fr}
   .uc-grid{grid-template-columns:1fr}
+  .rc-grid{grid-template-columns:1fr}
   table.matrix th.row{min-width:140px}
 }
 </style>
@@ -619,9 +671,12 @@ function memoryUseHtml(x){
     <div class="itembox"><h4>保持期間</h4><p>${esc(m.retention||'—')}</p></div>
     <div class="itembox"><h4>保持粒度・所有者</h4><p>${esc(m.granularity||'—')}</p><p>${esc(m.ownership||'—')}</p></div>
   </div>
-  <div class="two">
-    <div class="itembox risk"><h4>メモリ固有リスク</h4><ul>${(m.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
-    <div class="itembox control"><h4>メモリ制御</h4><ul>${(m.controls||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>
+  <div class="memory-general">
+    <p class="memory-general__note">下記はメモリ運用上の<b>一般観点リスト</b>です。リスクとコントロールは1対1ペアではなく、それぞれ独立した観点として読んでください。1対1ペアの個別リスクは下部の「リスクとコントロール」セクションを参照。</p>
+    <div class="two">
+      <div class="itembox risk"><h4>メモリ運用上の留意リスク（一般）</h4><ul>${(m.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
+      <div class="itembox control"><h4>メモリ運用上の標準コントロール（一般）</h4><ul>${(m.controls||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>
+    </div>
   </div>`;
 }
 function stepsHtml(steps){
@@ -631,7 +686,25 @@ function useCasesHtml(items){
   return (items||[]).map(u=>`<div class="itembox"><h4>${esc(u.title)}</h4><p><b>想定シナリオ:</b> ${esc(u.scene)}</p><p><b>入力例:</b> ${esc(u.input)}</p><p><b>成功条件:</b> ${esc(u.success)}</p></div>`).join('');
 }
 function risksHtml(items){
-  return `<div class="two">${(items||[]).map(r=>`<div class="itembox risk"><h4>リスク</h4><p>${esc(r.risk)}</p></div><div class="itembox control"><h4>コントロール</h4><p>${esc(r.control)}</p></div>`).join('')}</div>`;
+  if(!items || !items.length) return '<p style="color:var(--muted);font-size:13px;margin:0">登録されたリスク・コントロールはありません。</p>';
+  return `<p class="rc-section-head"><span class="pill red">▼ 構成要素単独の基本リスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">${items.length}ペア・すべて表示</span></p>
+    <div class="rc-grid">${items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>`;
+}
+
+// 共通ヘルパー: リスクとコントロールを1枚の縦結合カードとして描画
+// idx: 通し番号 (1,2,3...) — カード内では ⚠N / ✓N のペアとして表示
+function rcPairHtml(r, idx){
+  return `<div class="rc-pair">
+    <div class="rc-pair__risk">
+      <h5><span class="rc-pair__id">⚠ ${idx}</span> リスク</h5>
+      <p>${esc(r.risk)}</p>
+    </div>
+    <div class="rc-pair__sep">↓ 対策</div>
+    <div class="rc-pair__control">
+      <h5><span class="rc-pair__id">✓ ${idx}</span> コントロール</h5>
+      <p>${esc(r.control)}</p>
+    </div>
+  </div>`;
 }
 function legendHtml(items){
   return `<div class="legend-grid">${(items||[]).map(l=>`<div class="itembox"><h4>${esc(l.symbol)}</h4><p>${esc(l.meaning)}</p></div>`).join('')}</div>`;
@@ -744,12 +817,32 @@ function renderBuilder(){
     </section>
     <section class="section combined-risks">
       <h3>リスクとコントロール</h3>
-      <p style="margin:0 0 6px;font-weight:800;font-size:13px;color:#475467">▼ 統合リスクとコントロール (A+M+T 各構成要素から派生する基本リスク)</p>
-      <div class="two">${combineRisks(a,m,t).map(r=>`<div class="itembox risk"><h4>${esc(r.source)} リスク</h4><p>${esc(r.risk)}</p></div><div class="itembox control"><h4>${esc(r.source)} コントロール</h4><p>${esc(r.control)}</p></div>`).join('')}</div>
+      <p style="margin:0 0 6px;font-size:12.5px;color:#475467">この組合せに関わるリスクを <b>4階層</b> で確認できます。最重要は最下部の「組合せ固有リスク」です。</p>
+
+      <p class="rc-section-head"><span class="pill gray">▼ 階層1: 構成要素単独の基本リスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">A/M/T それぞれの risksControls を全件、ソース別にグルーピングして表示</span></p>
+
+      ${(()=>{ const c=combineRisks(a,m,t); return `
+        <div class="rc-group">
+          <div class="rc-group__head"><span class="rc-group__tag a">A 構成</span><span class="rc-group__name">${esc(c.A.name)}</span><span class="rc-group__count">${c.A.items.length}ペア</span></div>
+          <div class="rc-grid">${c.A.items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+        </div>
+        <div class="rc-group">
+          <div class="rc-group__head"><span class="rc-group__tag m">M メモリ</span><span class="rc-group__name">${esc(c.M.name)}</span><span class="rc-group__count">${c.M.items.length}ペア</span></div>
+          <div class="rc-grid">${c.M.items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+        </div>
+        <div class="rc-group">
+          <div class="rc-group__head"><span class="rc-group__tag t">T ツール</span><span class="rc-group__name">${esc(c.T.name)}</span><span class="rc-group__count">${c.T.items.length}ペア</span></div>
+          <div class="rc-grid">${c.T.items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+        </div>`; })()}
+
       ${rec && rec.risksControls && rec.risksControls.length ? `
-      <p style="margin:18px 0 6px;font-weight:800;font-size:13px;color:#991b1b">▼ このユースケースのリスクとコントロール (「${esc(rec.usecase)}」固有 — AIエージェント全体としての組合せ固有リスク)</p>
-      <div class="two">${rec.risksControls.map((r,i)=>`<div class="itembox risk"><h4>リスク ${i+1}</h4><p>${esc(r.risk)}</p></div><div class="itembox control"><h4>コントロール ${i+1}</h4><p>${esc(r.control)}</p></div>`).join('')}</div>` : ''}
-      ${rec?`<div class="itembox" style="border-left:4px solid var(--blue);margin-top:10px"><h4>この組合せの推奨理由</h4><p>${esc(rec.summary)}</p></div>`:''}
+      <div class="rc-usecase-block">
+        <h4>階層2: AIエージェント全体としての組合せ固有リスク</h4>
+        <p class="rc-usecase-block__note">A+M+T を組合せた本構成 ×「<b>${esc(rec.usecase)}</b>」固有のリスクです。構成要素単独では見えない、組合せ・運用時にのみ顕在化する論点です。<b>${rec.risksControls.length}ペア・最優先で確認</b>。</p>
+        <div class="rc-grid">${rec.risksControls.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+      </div>` : ''}
+
+      ${rec?`<div class="itembox" style="border-left:4px solid var(--blue);margin-top:14px"><h4>この組合せの推奨理由</h4><p>${esc(rec.summary)}</p></div>`:''}
       ${am.note||at.note?`<div class="itembox" style="border-left:4px solid var(--amber);margin-top:10px"><h4>この組合せの注記</h4>${am.note?`<p><b>A×M:</b> ${esc(am.note)}</p>`:''}${at.note?`<p><b>A×T:</b> ${esc(at.note)}</p>`:''}</div>`:''}
     </section>
   `;
@@ -770,11 +863,12 @@ function synthesizeArchitecture(a,m,t){
 }
 
 function combineRisks(a,m,t){
-  const out = [];
-  (a.risksControls||[]).slice(0,2).forEach(r=>out.push({source:'A 構成', risk:r.risk, control:r.control}));
-  (m.risksControls||[]).slice(0,2).forEach(r=>out.push({source:'M メモリ', risk:r.risk, control:r.control}));
-  (t.risksControls||[]).slice(0,2).forEach(r=>out.push({source:'T ツール', risk:r.risk, control:r.control}));
-  return out;
+  // A/M/T それぞれの risksControls を全件返す (slice 撤廃: 省略しない)
+  return {
+    A: { name: a.name, items: (a.risksControls||[]).map(r=>({risk:r.risk, control:r.control})) },
+    M: { name: m.name, items: (m.risksControls||[]).map(r=>({risk:r.risk, control:r.control})) },
+    T: { name: t.name, items: (t.risksControls||[]).map(r=>({risk:r.risk, control:r.control})) },
+  };
 }
 
 // ============================================================
