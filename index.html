@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>AIエージェント設計カタログ — 構成 × メモリ × ツール | Agent Platform</title>
-<meta name="description" content="AIエージェントの構成（A）・メモリ設計（M）・ツールユース（T）をMECEに整理した設計カタログ。用途から推奨構成を探し、相性マトリクスとコンポーザーで設計判断を支援します。" />
+<title>AIエージェント設計カタログ| Agent Platform</title>
+<meta name="description" content="AIエージェントの構成を整理した設計カタログ。用途から推奨構成を提案します。" />
 <meta name="theme-color" content="#16181d" />
 <meta name="color-scheme" content="light" />
 <link rel="canonical" href="./" />
@@ -365,27 +365,31 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 /* ============================================================
    Risk & Control pair cards
    ============================================================ */
-.rc-section-head{display:flex;align-items:center;gap:7px;margin:16px 0 9px;font-size:12.5px;font-weight:700;
-  color:var(--ink-2);letter-spacing:.01em}
-.rc-section-head .pill{font-size:10.5px;padding:2px 9px}
+.rc-section-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:18px 0 10px;font-size:13px;font-weight:700;
+  color:var(--ink);letter-spacing:.01em}
+.rc-section-head .pill{font-size:11px;padding:3px 10px}
+.rc-section-head .rc-muted{color:var(--muted);font-weight:500;font-size:11.5px}
+.rc-section-head--key{color:#9a2d20}
 
-.rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:11px;margin:6px 0}
+.rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:6px 0}
 
 .rc-pair{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.15s}
 .rc-pair:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--line-2)}
 
-.rc-pair__row{display:grid;grid-template-columns:64px 1fr;gap:14px;padding:14px 16px 14px 18px;position:relative}
-.rc-pair__row::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0}
+.rc-pair__row{display:grid;grid-template-columns:62px 1fr;gap:13px;padding:13px 16px 13px 17px;position:relative}
+.rc-pair__row::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:3px;border-radius:0 3px 3px 0}
 .rc-pair__row--risk::before{background:var(--no)}
 .rc-pair__row--ctl{border-top:1px solid var(--line)}
 .rc-pair__row--ctl::before{background:var(--rec)}
-.rc-pair__meta{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-.rc-pair__kind{font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:7px;white-space:nowrap}
+.rc-pair__kind{justify-self:start;align-self:start;font-family:var(--font-mono);font-size:10.5px;font-weight:700;
+  letter-spacing:.02em;padding:3px 8px;border-radius:7px;white-space:nowrap}
 .rc-pair__row--risk .rc-pair__kind{color:var(--no);background:var(--no-bg)}
 .rc-pair__row--ctl  .rc-pair__kind{color:var(--rec);background:var(--rec-bg)}
-.rc-pair__id{font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em}
 .rc-pair__text{margin:0;font-size:13px;line-height:1.7;color:var(--ink)}
 .rc-pair__row--ctl .rc-pair__text{color:var(--ink-2)}
+
+/* 視点2 emphasis (flat: thin red rail) */
+.rc-key{border-left:3px solid var(--no);padding-left:14px;margin-top:2px}
 
 .rc-group{margin:10px 0 16px}
 .rc-group__head{display:flex;align-items:center;gap:9px;margin:0 0 9px;padding:8px 12px;background:var(--paper-2);
@@ -396,13 +400,6 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 .rc-group__head .rc-group__tag.t{background:var(--accent-bg);color:var(--accent-ink)}
 .rc-group__head .rc-group__name{color:var(--muted);font-weight:500}
 .rc-group__head .rc-group__count{margin-left:auto;color:var(--muted);font-weight:500;font-size:11px;font-family:var(--font-mono)}
-
-.rc-usecase-block{margin:18px 0 0;padding:16px 16px 16px 18px;background:var(--surface);border:1px solid var(--line);
-  border-left:3px solid var(--no);border-radius:14px}
-.rc-usecase-block > h4{margin:0 0 5px;font-family:var(--font-display);font-size:15.5px;color:#9a2d20;font-weight:600;
-  display:flex;align-items:center;gap:8px}
-.rc-usecase-block > h4::before{content:"⚠";font-size:17px}
-.rc-usecase-block__note{margin:0 0 12px;font-size:12px;color:var(--ink-2);line-height:1.6}
 
 .usecase-risks{background:var(--no-bg);border-left:3px solid var(--no)}
 .usecase-risks h3{color:#9a2d20}
@@ -557,9 +554,6 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 
   <!-- === Builder View === -->
   <section id="builderView" class="view">
-    <div class="uc-intro">
-      <h2>コンポーザー</h2>
-    </div>
     <div class="builder-grid">
       <div class="builder-slot">
         <label>A: エージェント構成</label>
@@ -993,11 +987,11 @@ function rcPairHtml(r, label){
   const id = esc(String(label));
   return `<article class="rc-pair">
     <div class="rc-pair__row rc-pair__row--risk">
-      <div class="rc-pair__meta"><span class="rc-pair__kind">リスク</span><span class="rc-pair__id">${id}</span></div>
+      <span class="rc-pair__kind">リスク${id}</span>
       <p class="rc-pair__text">${esc(r.risk)}</p>
     </div>
     <div class="rc-pair__row rc-pair__row--ctl">
-      <div class="rc-pair__meta"><span class="rc-pair__kind">対策</span><span class="rc-pair__id">${id}</span></div>
+      <span class="rc-pair__kind">対策${id}</span>
       <p class="rc-pair__text">${esc(r.control)}</p>
     </div>
   </article>`;
@@ -1122,33 +1116,28 @@ function renderBuilder(){
     </section>
     <section class="section combined-risks">
       <h3>リスクと対策</h3>
-      <p style="margin:0 0 6px;font-size:12.5px;color:#475467">この組合せのリスクは <b>2つの視点</b> で確認できます。最重要は下段の「この用途で組み合わせると出るリスク」です。</p>
 
-      <p class="rc-section-head"><span class="pill gray">視点1: 各部品そのもののリスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">A・M・T それぞれを単体で見たときのリスクと対策</span></p>
+      <p class="rc-section-head"><span class="pill gray">視点1</span> 各部品そのもののリスク <span class="rc-muted">A・M・T を単体で見たときの論点</span></p>
 
       ${(()=>{ const c=combineRisks(a,m,t); return `
         <div class="rc-group">
           <div class="rc-group__head"><span class="rc-group__tag a">A 構成</span><span class="rc-group__name">${esc(c.A.name)}</span><span class="rc-group__count">${c.A.items.length}件</span></div>
-          <div class="rc-grid">${c.A.items.map((r,i)=>rcPairHtml(r, 'A-'+(i+1))).join('')}</div>
+          <div class="rc-grid">${c.A.items.map((r,i)=>rcPairHtml(r, 'A'+(i+1))).join('')}</div>
         </div>
         <div class="rc-group">
           <div class="rc-group__head"><span class="rc-group__tag m">M メモリ</span><span class="rc-group__name">${esc(c.M.name)}</span><span class="rc-group__count">${c.M.items.length}件</span></div>
-          <div class="rc-grid">${c.M.items.map((r,i)=>rcPairHtml(r, 'M-'+(i+1))).join('')}</div>
+          <div class="rc-grid">${c.M.items.map((r,i)=>rcPairHtml(r, 'M'+(i+1))).join('')}</div>
         </div>
         <div class="rc-group">
           <div class="rc-group__head"><span class="rc-group__tag t">T ツール</span><span class="rc-group__name">${esc(c.T.name)}</span><span class="rc-group__count">${c.T.items.length}件</span></div>
-          <div class="rc-grid">${c.T.items.map((r,i)=>rcPairHtml(r, 'T-'+(i+1))).join('')}</div>
+          <div class="rc-grid">${c.T.items.map((r,i)=>rcPairHtml(r, 'T'+(i+1))).join('')}</div>
         </div>`; })()}
 
       ${rec && rec.risksControls && rec.risksControls.length ? `
-      <div class="rc-usecase-block">
-        <h4>視点2: この用途で組み合わせると出るリスク（最重要）</h4>
-        <p class="rc-usecase-block__note">A＋M＋T を組み合わせた本構成 ×「<b>${esc(rec.usecase)}</b>」に固有のリスクです。部品を単体で見ていては気づけない、組み合わせて運用したときにだけ表面化する論点です。<b>${rec.risksControls.length}件・最優先で確認してください。</b></p>
+      <p class="rc-section-head rc-section-head--key"><span class="pill red">視点2・最重要</span> この用途で組み合わせると出るリスク <span class="rc-muted">${rec.risksControls.length}件</span></p>
+      <div class="rc-key">
         <div class="rc-grid">${rec.risksControls.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
       </div>` : ''}
-
-      ${rec?`<div class="itembox" style="border-left:4px solid var(--blue);margin-top:14px"><h4>この組合せを推奨する理由</h4><p>${esc(rec.summary)}</p></div>`:''}
-      ${am.note||at.note?`<div class="itembox" style="border-left:4px solid var(--amber);margin-top:10px"><h4>この組合せの注記</h4>${am.note?`<p><b>A×M:</b> ${esc(am.note)}</p>`:''}${at.note?`<p><b>A×T:</b> ${esc(at.note)}</p>`:''}</div>`:''}
     </section>
   `;
   renderMermaidBlocks();
