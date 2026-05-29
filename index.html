@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>AIエージェント設計カタログ| Agent Platform</title>
-<meta name="description" content="AIエージェントの構成を整理した設計カタログ。用途から推奨構成を提案します。" />
+<title>AIエージェント設計カタログ — 構成 × メモリ × ツール | Agent Platform</title>
+<meta name="description" content="AIエージェントの構成（A）・メモリ設計（M）・ツールユース（T）をMECEに整理した設計カタログ。用途から推奨構成を探し、相性マトリクスとコンポーザーで設計判断を支援します。" />
 <meta name="theme-color" content="#16181d" />
 <meta name="color-scheme" content="light" />
 <link rel="canonical" href="./" />
@@ -274,9 +274,18 @@ select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--a
 .itembox p{margin:3px 0;color:var(--ink-2);font-size:13.5px;line-height:1.6}
 .itembox ul{margin:5px 0;padding-left:18px}
 .itembox li{font-size:13.5px;color:var(--ink-2);margin:3px 0}
-.risk{border-left:3px solid var(--no)}
-.control{border-left:3px solid var(--rec)}
+.risk h4{color:var(--no)}
+.control h4{color:var(--rec)}
 .legend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+
+/* compact diagram key (#凡例 co-located with 図解) */
+.diagrams .diagram-title{font-family:var(--font-display);font-weight:600;font-size:14px;margin:18px 0 8px;color:var(--ink-2)}
+.legend{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 6px}
+.legend__cap{display:block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.legend__items{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:7px 18px}
+.legend__item{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:12px;color:var(--ink-2);line-height:1.5}
+.legend__item b{font-family:var(--font-display);font-weight:600;color:var(--ink);white-space:nowrap}
 .backrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .copy-note{font-size:12px;color:var(--accent-ink);font-weight:600}
 
@@ -376,11 +385,8 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 .rc-pair{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.15s}
 .rc-pair:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--line-2)}
 
-.rc-pair__row{display:grid;grid-template-columns:62px 1fr;gap:13px;padding:13px 16px 13px 17px;position:relative}
-.rc-pair__row::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:3px;border-radius:0 3px 3px 0}
-.rc-pair__row--risk::before{background:var(--no)}
+.rc-pair__row{display:grid;grid-template-columns:62px 1fr;gap:13px;padding:13px 16px}
 .rc-pair__row--ctl{border-top:1px solid var(--line)}
-.rc-pair__row--ctl::before{background:var(--rec)}
 .rc-pair__kind{justify-self:start;align-self:start;font-family:var(--font-mono);font-size:10.5px;font-weight:700;
   letter-spacing:.02em;padding:3px 8px;border-radius:7px;white-space:nowrap}
 .rc-pair__row--risk .rc-pair__kind{color:var(--no);background:var(--no-bg)}
@@ -389,7 +395,7 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 .rc-pair__row--ctl .rc-pair__text{color:var(--ink-2)}
 
 /* 視点2 emphasis (flat: thin red rail) */
-.rc-key{border-left:3px solid var(--no);padding-left:14px;margin-top:2px}
+.rc-key{margin-top:2px}
 
 .rc-group{margin:10px 0 16px}
 .rc-group__head{display:flex;align-items:center;gap:9px;margin:0 0 9px;padding:8px 12px;background:var(--paper-2);
@@ -405,9 +411,8 @@ table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);bo
 .usecase-risks h3{color:#9a2d20}
 
 .memory-general{background:var(--warn-bg);border:1px solid #ecd3a6;border-radius:10px;padding:12px 14px;margin-top:10px}
-.memory-general__note{margin:0 0 9px;font-size:11.5px;color:#7c4a12;font-weight:600;line-height:1.55;
-  display:flex;align-items:flex-start;gap:6px}
-.memory-general__note::before{content:"ℹ";font-size:13px;flex-shrink:0;margin-top:1px}
+.memory-general__note{margin:0 0 9px;font-size:12px;color:#7c4a12;font-weight:600;line-height:1.6}
+.memory-general__note::before{content:"ℹ ";font-weight:700}
 .memory-general .itembox{margin-bottom:0}
 
 /* ============================================================
@@ -898,10 +903,13 @@ function renderDetail(){
       ${x.expectedTools?`<section class="section"><h3>想定されるツール</h3><p>${esc(x.expectedTools)}</p></section>`:''}
       <section class="section"><h3>メモリの使い方</h3>${memoryUseHtml(x)}</section>
       <section class="section"><h3>各ステップ</h3>${stepsHtml(x.steps)}</section>
-      <section class="section"><h3>データフロー図</h3>${diagramHtml(x.dataFlowMermaid)}</section>
-      <section class="section"><h3>構成図</h3>${diagramHtml(x.architectureMermaid)}</section>
-      <section class="section"><h3>メモリ使用図</h3>${diagramHtml(x.memoryFlowMermaid)}</section>
-      <section class="section"><h3>図の見方（凡例）</h3>${legendHtml(x.legend)}</section>
+      <section class="section diagrams">
+        <h3>図解</h3>
+        ${legendHtml(x.legend)}
+        ${x.dataFlowMermaid?`<h4 class="diagram-title">データフロー図</h4>${diagramHtml(x.dataFlowMermaid)}`:''}
+        ${x.architectureMermaid?`<h4 class="diagram-title">構成図</h4>${diagramHtml(x.architectureMermaid)}`:''}
+        ${x.memoryFlowMermaid?`<h4 class="diagram-title">メモリ使用図</h4>${diagramHtml(x.memoryFlowMermaid)}`:''}
+      </section>
       <section class="section"><h3>ユースケース例</h3>${useCasesHtml(x.useCases)}</section>
       <section class="section"><h3>リスクと対策</h3>${risksHtml(x.risksControls)}</section>
     </div>`;
@@ -997,7 +1005,11 @@ function rcPairHtml(r, label){
   </article>`;
 }
 function legendHtml(items){
-  return `<div class="legend-grid">${(items||[]).map(l=>`<div class="itembox"><h4>${esc(l.symbol)}</h4><p>${esc(l.meaning)}</p></div>`).join('')}</div>`;
+  if(!items || !items.length) return '';
+  return `<div class="legend">
+    <span class="legend__cap">図中の記号の意味</span>
+    <div class="legend__items">${items.map(l=>`<span class="legend__item"><b>${esc(l.symbol)}</b><span>${esc(l.meaning)}</span></span>`).join('')}</div>
+  </div>`;
 }
 
 // ============================================================
