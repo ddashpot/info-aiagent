@@ -198,7 +198,6 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
   table.matrix th.row{min-width:140px}
 }
 </style>
-  <script src="data.js"></script>
 </head>
 <body>
 <main class="app">
@@ -319,29 +318,22 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
   </div>
 </div>
 
-<!-- データは外部ファイル data.json から読み込みます -->
+
 
 <script>
 // ============================================================
 // Data and state
 // ============================================================
-// データは data.json から非同期で読み込む
-let DATASET = null, ITEMS = null, FAMILIES = null, RECOMMENDED = null;
-
-function loadDataset(){
-  // data.js が先に読み込まれ、window.DATASET にデータが入っている前提
-  if(!window.DATASET){
-    throw new Error('data.js が読み込まれていません。index.html と同じフォルダに data.js を置いてください。');
-  }
-  DATASET = window.DATASET;
+let DATASET, ITEMS, FAMILIES, RECOMMENDED, TAGS, AM, AT;
+function __assignDataset(d){
+  DATASET = d;
   ITEMS = DATASET.items;
   FAMILIES = DATASET.families;
   RECOMMENDED = DATASET.recommended;
-  return Promise.resolve();
+  TAGS = DATASET.tags;
+  AM = DATASET.amMatrix;
+  AT = DATASET.atMatrix;
 }
-const TAGS = DATASET.tags;
-const AM = DATASET.amMatrix;
-const AT = DATASET.atMatrix;
 
 const $ = (id)=>document.getElementById(id);
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
@@ -836,16 +828,15 @@ function refreshBuilderHash(){
   }
 }
 
-// データ読み込み後にUIをバインド・初期描画
-loadDataset()
-  .then(() => { bind(); applyHash(); })
-  .catch(err => {
-    document.body.innerHTML = '<div style="padding:24px;color:#dc2626;font-family:system-ui">'
-      + 'データの読み込みに失敗しました: ' + (err && err.message ? err.message : err)
-      + '<br><br>このページは <code>data.js</code> を同じフォルダに置いて読み込みます。'
-      + '<br><code>index.html</code> と <code>data.js</code> が同じフォルダにあるか確認してください。'
-      + '</div>';
-    console.error(err);
+fetch('ai_agent_catalog_v8-1.data.json')
+  .then(r=>r.json())
+  .then(d=>{
+    __assignDataset(d);
+    bind();
+    applyHash();
+  })
+  .catch(err=>{
+    document.body.innerHTML = '<div style="padding:24px;font-family:system-ui;color:#b91c1c"><h2>データ読み込みエラー</h2><p>ai_agent_catalog_v8-1.data.json を同じディレクトリに置き、ローカルサーバー (例: <code>python3 -m http.server</code>) で開いてください。</p><pre>'+String(err)+'</pre></div>';
   });
 </script>
 </body>
