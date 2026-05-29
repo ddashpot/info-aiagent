@@ -190,7 +190,7 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
 .usecase-risks h3{color:#991b1b}
 
 /* === Risk & Control pair cards (v8.2 redesign) ===
-   1ペア=1カード（縦結合）。リスク(上、赤系) → 「↓ 対策」 → コントロール(下、緑系)。
+   1枚=1カード（縦結合）。想定リスク(上、赤系) → 「↓ 対策」 → 対策(下、緑系)。
    階層識別: detail単独=neutral / builder統合=group化 / ユースケース固有=強調枠 */
 .rc-section-head{display:flex;align-items:center;gap:6px;margin:14px 0 8px;font-size:12.5px;font-weight:800;color:#475467;letter-spacing:.02em}
 .rc-section-head .pill{font-size:10.5px;padding:2px 8px}
@@ -234,7 +234,7 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
 .rc-usecase-block .rc-pair__risk .rc-pair__id{background:#991b1b}
 .rc-usecase-block .rc-pair__sep{background:#fef2f2;color:#b91c1c}
 
-/* Memory general lists (非ペア観点として明示) */
+/* メモリ運用の共通原則ブロック */
 .memory-general{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-top:10px}
 .memory-general__note{margin:0 0 8px;font-size:11.5px;color:#92400e;font-weight:700;line-height:1.5;display:flex;align-items:flex-start;gap:6px}
 .memory-general__note::before{content:"ℹ";font-size:13px;flex-shrink:0;margin-top:1px}
@@ -329,7 +329,7 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
   <section id="builderView" class="view">
     <div class="uc-intro" style="background:linear-gradient(135deg,#fff,#ecfdf5)">
       <h2>組合せビルダー</h2>
-      <p>A・M・T を選ぶと、相性、各フロー、統合リスク・コントロールを並列に表示します。URLは自動的に共有可能な形になります。</p>
+      <p>A・M・T を選ぶと、相性、各フロー、リスクと対策をまとめて表示します。選んだ組合せはURLで共有できます。</p>
     </div>
     <div class="builder-grid">
       <div class="builder-slot">
@@ -376,7 +376,7 @@ table.matrix td.cell:hover{transform:scale(1.1);z-index:1;position:relative;box-
 // ============================================================
 // Data and state
 // ============================================================
-let DATASET, ITEMS, FAMILIES, RECOMMENDED, TAGS, AM, AT;
+let DATASET, ITEMS, FAMILIES, RECOMMENDED, TAGS, AM, AT, MEMORY_COMMON;
 function __assignDataset(d){
   DATASET = d;
   ITEMS = DATASET.items;
@@ -385,6 +385,7 @@ function __assignDataset(d){
   TAGS = DATASET.tags;
   AM = DATASET.amMatrix;
   AT = DATASET.atMatrix;
+  MEMORY_COMMON = DATASET.memoryCommon || {};
 }
 
 const $ = (id)=>document.getElementById(id);
@@ -518,7 +519,7 @@ function renderUsecases(){
         <span class="pill amber">M: ${esc(m?m.name:r.M)}</span>
         <span class="pill blue">T: ${esc(t?t.name:r.T)}</span>
       </div>
-      ${r.risksControls && r.risksControls.length ? `<div style="margin-top:8px;font-size:11.5px;color:#b91c1c;font-weight:700">⚠ 固有リスク・コントロール ${r.risksControls.length}件 →ビルダーで確認</div>` : ''}
+      ${r.risksControls && r.risksControls.length ? `<div style="margin-top:8px;font-size:11.5px;color:#b91c1c;font-weight:700">この用途で組み合わせると出るリスク ${r.risksControls.length}件（ビルダーで確認）</div>` : ''}
     </article>`;
   }).join('');
   grid.querySelectorAll('[data-trio]').forEach(el=>{
@@ -619,9 +620,9 @@ function renderDetail(){
       <section class="section"><h3>データフロー図</h3>${diagramHtml(x.dataFlowMermaid)}</section>
       <section class="section"><h3>構成図</h3>${diagramHtml(x.architectureMermaid)}</section>
       <section class="section"><h3>メモリ使用図</h3>${diagramHtml(x.memoryFlowMermaid)}</section>
-      <section class="section"><h3>図示オブジェクトの凡例</h3>${legendHtml(x.legend)}</section>
+      <section class="section"><h3>図の見方（凡例）</h3>${legendHtml(x.legend)}</section>
       <section class="section"><h3>ユースケース例</h3>${useCasesHtml(x.useCases)}</section>
-      <section class="section"><h3>リスクとコントロール</h3>${risksHtml(x.risksControls)}</section>
+      <section class="section"><h3>リスクと対策</h3>${risksHtml(x.risksControls)}</section>
     </div>`;
   renderMermaidBlocks();
 }
@@ -668,14 +669,21 @@ function memoryUseHtml(x){
   <div class="two">
     <div class="itembox"><h4>読み出し</h4><p>${esc(m.read||'—')}</p></div>
     <div class="itembox"><h4>書き込み</h4><p>${esc(m.write||'—')}</p></div>
-    <div class="itembox"><h4>保持期間</h4><p>${esc(m.retention||'—')}</p></div>
-    <div class="itembox"><h4>保持粒度・所有者</h4><p>${esc(m.granularity||'—')}</p><p>${esc(m.ownership||'—')}</p></div>
   </div>
-  <div class="memory-general">
-    <p class="memory-general__note">下記はメモリ運用上の<b>一般観点リスト</b>です。リスクとコントロールは1対1ペアではなく、それぞれ独立した観点として読んでください。1対1ペアの個別リスクは下部の「リスクとコントロール」セクションを参照。</p>
+  ${memoryCommonHtml()}`;
+}
+// 全構成に共通するメモリ運用の原則。各項目で内容は変わらないため、共通ブロックとして一度だけ提示する。
+function memoryCommonHtml(){
+  const c = MEMORY_COMMON||{};
+  return `<div class="memory-general">
+    <p class="memory-general__note">以下は<b>すべての構成に共通するメモリ運用の原則</b>です。個々の構成に固有のリスクは下部の「リスクと対策」を参照してください。</p>
     <div class="two">
-      <div class="itembox risk"><h4>メモリ運用上の留意リスク（一般）</h4><ul>${(m.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
-      <div class="itembox control"><h4>メモリ運用上の標準コントロール（一般）</h4><ul>${(m.controls||[]).map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>
+      <div class="itembox"><h4>保持期間</h4><p>${esc(c.retention||'—')}</p></div>
+      <div class="itembox"><h4>保持粒度・所有者</h4><p>${esc(c.granularity||'—')}</p><p>${esc(c.ownership||'—')}</p></div>
+    </div>
+    <div class="two">
+      <div class="itembox risk"><h4>運用上の留意点</h4><ul>${(c.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
+      <div class="itembox control"><h4>標準的な対策</h4><ul>${(c.controls||[]).map(v=>`<li>${esc(v)}</li>`).join('')}</ul></div>
     </div>
   </div>`;
 }
@@ -686,22 +694,23 @@ function useCasesHtml(items){
   return (items||[]).map(u=>`<div class="itembox"><h4>${esc(u.title)}</h4><p><b>想定シナリオ:</b> ${esc(u.scene)}</p><p><b>入力例:</b> ${esc(u.input)}</p><p><b>成功条件:</b> ${esc(u.success)}</p></div>`).join('');
 }
 function risksHtml(items){
-  if(!items || !items.length) return '<p style="color:var(--muted);font-size:13px;margin:0">登録されたリスク・コントロールはありません。</p>';
-  return `<p class="rc-section-head"><span class="pill red">▼ 構成要素単独の基本リスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">${items.length}ペア・すべて表示</span></p>
+  if(!items || !items.length) return '<p style="color:var(--muted);font-size:13px;margin:0">登録されたリスク・対策はありません。</p>';
+  return `<p class="rc-section-head"><span class="pill red">この構成だけで起きるリスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">${items.length}件</span></p>
+    <p style="margin:0 0 8px;font-size:12px;color:#64748b">各カードは「想定されるリスク（上）→ 対策（下）」が1対1で対応します。</p>
     <div class="rc-grid">${items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>`;
 }
 
-// 共通ヘルパー: リスクとコントロールを1枚の縦結合カードとして描画
-// idx: 通し番号 (1,2,3...) — カード内では ⚠N / ✓N のペアとして表示
-function rcPairHtml(r, idx){
+// 共通ヘルパー: リスクと対策を1枚の縦結合カードとして描画
+// label: バッジに出す識別子 (例: "1" / "A-1" / "M-2")。出所つきにすると複数グループでも一意に追える
+function rcPairHtml(r, label){
   return `<div class="rc-pair">
     <div class="rc-pair__risk">
-      <h5><span class="rc-pair__id">⚠ ${idx}</span> リスク</h5>
+      <h5><span class="rc-pair__id">⚠ ${esc(String(label))}</span> 想定されるリスク</h5>
       <p>${esc(r.risk)}</p>
     </div>
     <div class="rc-pair__sep">↓ 対策</div>
     <div class="rc-pair__control">
-      <h5><span class="rc-pair__id">✓ ${idx}</span> コントロール</h5>
+      <h5><span class="rc-pair__id">✓ ${esc(String(label))}</span> 対策（コントロール）</h5>
       <p>${esc(r.control)}</p>
     </div>
   </div>`;
@@ -816,33 +825,33 @@ function renderBuilder(){
       ${diagramHtml(synthesizeArchitecture(a,m,t))}
     </section>
     <section class="section combined-risks">
-      <h3>リスクとコントロール</h3>
-      <p style="margin:0 0 6px;font-size:12.5px;color:#475467">この組合せに関わるリスクを <b>4階層</b> で確認できます。最重要は最下部の「組合せ固有リスク」です。</p>
+      <h3>リスクと対策</h3>
+      <p style="margin:0 0 6px;font-size:12.5px;color:#475467">この組合せのリスクは <b>2つの視点</b> で確認できます。最重要は下段の「この用途で組み合わせると出るリスク」です。</p>
 
-      <p class="rc-section-head"><span class="pill gray">▼ 階層1: 構成要素単独の基本リスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">A/M/T それぞれの risksControls を全件、ソース別にグルーピングして表示</span></p>
+      <p class="rc-section-head"><span class="pill gray">視点1: 各部品そのもののリスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">A・M・T それぞれを単体で見たときのリスクと対策</span></p>
 
       ${(()=>{ const c=combineRisks(a,m,t); return `
         <div class="rc-group">
-          <div class="rc-group__head"><span class="rc-group__tag a">A 構成</span><span class="rc-group__name">${esc(c.A.name)}</span><span class="rc-group__count">${c.A.items.length}ペア</span></div>
-          <div class="rc-grid">${c.A.items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+          <div class="rc-group__head"><span class="rc-group__tag a">A 構成</span><span class="rc-group__name">${esc(c.A.name)}</span><span class="rc-group__count">${c.A.items.length}件</span></div>
+          <div class="rc-grid">${c.A.items.map((r,i)=>rcPairHtml(r, 'A-'+(i+1))).join('')}</div>
         </div>
         <div class="rc-group">
-          <div class="rc-group__head"><span class="rc-group__tag m">M メモリ</span><span class="rc-group__name">${esc(c.M.name)}</span><span class="rc-group__count">${c.M.items.length}ペア</span></div>
-          <div class="rc-grid">${c.M.items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+          <div class="rc-group__head"><span class="rc-group__tag m">M メモリ</span><span class="rc-group__name">${esc(c.M.name)}</span><span class="rc-group__count">${c.M.items.length}件</span></div>
+          <div class="rc-grid">${c.M.items.map((r,i)=>rcPairHtml(r, 'M-'+(i+1))).join('')}</div>
         </div>
         <div class="rc-group">
-          <div class="rc-group__head"><span class="rc-group__tag t">T ツール</span><span class="rc-group__name">${esc(c.T.name)}</span><span class="rc-group__count">${c.T.items.length}ペア</span></div>
-          <div class="rc-grid">${c.T.items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
+          <div class="rc-group__head"><span class="rc-group__tag t">T ツール</span><span class="rc-group__name">${esc(c.T.name)}</span><span class="rc-group__count">${c.T.items.length}件</span></div>
+          <div class="rc-grid">${c.T.items.map((r,i)=>rcPairHtml(r, 'T-'+(i+1))).join('')}</div>
         </div>`; })()}
 
       ${rec && rec.risksControls && rec.risksControls.length ? `
       <div class="rc-usecase-block">
-        <h4>階層2: AIエージェント全体としての組合せ固有リスク</h4>
-        <p class="rc-usecase-block__note">A+M+T を組合せた本構成 ×「<b>${esc(rec.usecase)}</b>」固有のリスクです。構成要素単独では見えない、組合せ・運用時にのみ顕在化する論点です。<b>${rec.risksControls.length}ペア・最優先で確認</b>。</p>
+        <h4>視点2: この用途で組み合わせると出るリスク（最重要）</h4>
+        <p class="rc-usecase-block__note">A＋M＋T を組み合わせた本構成 ×「<b>${esc(rec.usecase)}</b>」に固有のリスクです。部品を単体で見ていては気づけない、組み合わせて運用したときにだけ表面化する論点です。<b>${rec.risksControls.length}件・最優先で確認してください。</b></p>
         <div class="rc-grid">${rec.risksControls.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
       </div>` : ''}
 
-      ${rec?`<div class="itembox" style="border-left:4px solid var(--blue);margin-top:14px"><h4>この組合せの推奨理由</h4><p>${esc(rec.summary)}</p></div>`:''}
+      ${rec?`<div class="itembox" style="border-left:4px solid var(--blue);margin-top:14px"><h4>この組合せを推奨する理由</h4><p>${esc(rec.summary)}</p></div>`:''}
       ${am.note||at.note?`<div class="itembox" style="border-left:4px solid var(--amber);margin-top:10px"><h4>この組合せの注記</h4>${am.note?`<p><b>A×M:</b> ${esc(am.note)}</p>`:''}${at.note?`<p><b>A×T:</b> ${esc(at.note)}</p>`:''}</div>`:''}
     </section>
   `;
@@ -922,7 +931,7 @@ function refreshBuilderHash(){
   }
 }
 
-fetch('ai_agent_catalog_v8-1.data.json')
+fetch('ai_agent_catalog_v8-1_data.json')
   .then(r=>r.json())
   .then(d=>{
     __assignDataset(d);
@@ -930,7 +939,7 @@ fetch('ai_agent_catalog_v8-1.data.json')
     applyHash();
   })
   .catch(err=>{
-    document.body.innerHTML = '<div style="padding:24px;font-family:system-ui;color:#b91c1c"><h2>データ読み込みエラー</h2><p>ai_agent_catalog_v8-1.data.json を同じディレクトリに置き、ローカルサーバー (例: <code>python3 -m http.server</code>) で開いてください。</p><pre>'+String(err)+'</pre></div>';
+    document.body.innerHTML = '<div style="padding:24px;font-family:system-ui;color:#b91c1c"><h2>データ読み込みエラー</h2><p>ai_agent_catalog_v8-1_data.json を同じディレクトリに置き、ローカルサーバー (例: <code>python3 -m http.server</code>) で開いてください。</p><pre>'+String(err)+'</pre></div>';
   });
 </script>
 </body>
