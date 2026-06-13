@@ -12,11 +12,24 @@
 > mock以外の能動検査は、設定の `"authorized": true` か CLI `--authorize` を明示しない限り実行されません。
 > あなたが検査対象を所有しているか、明示的な検査許可を得ている場合のみ使用してください。
 
+## インストール（任意・`aiva` コマンドを使う場合）
+
+依存ゼロなのでインストールなしでも `python3 -m aiva` で動きますが、`aiva` コマンドとして
+どこからでも使いたい場合は editable インストールします。
+
+```bash
+pip install -e tools/aiva        # リポジトリ直下から
+aiva --version                   # => aiva 1.1.0
+aiva scan --target mock          # どのディレクトリからでも実行可
+```
+
 ## クイックスタート（ネットワーク・APIキー不要）
 
 ```bash
-cd tools/aiva
-python3 -m aiva scan --target mock --format md,html
+# インストール無し
+cd tools/aiva && python3 -m aiva scan --target mock --format md,html
+# インストール済みなら
+aiva scan --target mock --format md,html
 # => ./aiva_report/report.{md,html,json} を生成
 ```
 

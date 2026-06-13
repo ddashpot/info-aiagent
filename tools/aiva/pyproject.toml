@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiva"
+version = "1.1.0"
+description = "AI / Agentic AI Vulnerability Assessment toolkit (BYO-endpoint, stdlib-only)"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [{ name = "info-aiagent" }]
+keywords = ["llm", "security", "owasp", "agentic-ai", "red-team", "vulnerability-assessment"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Topic :: Security",
+  "Intended Audience :: Developers",
+]
+# 依存ゼロ（Python標準ライブラリのみ）
+dependencies = []
+
+[project.scripts]
+aiva = "aiva.cli:main"
+
+[project.urls]
+Repository = "https://github.com/ddashpot/info-aiagent"
+
+[tool.setuptools]
+packages = ["aiva", "aiva.targets", "aiva.detectors"]
+
+[tool.setuptools.package-data]
+aiva = ["data/*.json"]
