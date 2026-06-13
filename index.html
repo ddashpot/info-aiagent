@@ -1624,8 +1624,8 @@ function renderDetail(){
         ${x.architectureMermaid?`<h4 class="diagram-title">構成図</h4>${diagramHtml(x.architectureMermaid)}`:''}
         ${x.memoryFlowMermaid?`<h4 class="diagram-title">メモリ使用図</h4>${diagramHtml(x.memoryFlowMermaid)}`:''}
       </section>
-      <section class="section"><h3>ユースケース例</h3>${useCasesHtml(x.useCases)}</section>
-      <section class="section"><h3>リスクと対策</h3>${risksHtml(x.risksControls)}</section>
+      <details class="disclose"><summary>ユースケース例<span class="ds-hint">タップで開く</span></summary><div class="disclose__body">${useCasesHtml(x.useCases)}</div></details>
+      <details class="disclose"><summary>リスクと対策<span class="ds-hint">タップで開く</span></summary><div class="disclose__body">${risksHtml(x.risksControls)}</div></details>
     </div>`;
   renderMermaidBlocks();
 }
