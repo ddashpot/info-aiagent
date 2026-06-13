@@ -1,0 +1,66 @@
+{
+  "__how_to_use__": [
+    "1) このファイルを config.json などにコピーする。",
+    "2) target を検査対象（自社アプリ/エンドポイント）に合わせて編集する。",
+    "3) 検査対象を所有 or 明示的に検査許可されていることを確認し、authorized を true にする。",
+    "4) 実行: python3 -m aiva scan --config config.json    （送信内容だけ確認するなら --dry-run）",
+    "プレースホルダ: body_template 内で ${prompt}=最新ユーザ発話 / ${system}=システム指示 / ${messages}=OpenAI形式配列 / ${env:NAME}=環境変数 が使える。"
+  ],
+
+  "target": {
+    "type": "http",
+    "__type_choices__": "mock(ローカル擬似) | http(任意JSON API) | openai(/v1/chat/completions互換)",
+
+    "url": "TODO: https://your-app.example.com/api/chat",
+    "method": "POST",
+    "__headers_note__": "資格情報は直書きせず ${env:NAME} で環境変数から注入する（漏えい防止）。",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${env:APP_TOKEN}"
+    },
+
+    "__body_template_note__": "あなたのAPIのリクエストJSONに合わせて自由に編集。文字列値にプレースホルダを使える。この body_template の中身がそのまま送信される（注記キーは入れない）。",
+    "body_template": {
+      "session_id": "aiva-scan",
+      "messages": "${messages}",
+      "user_input": "${prompt}"
+    },
+
+    "response_path": "TODO: data.reply",
+    "__response_path_note__": "応答JSONからテキストを取り出すドット区切りパス。配列は数値添字（例: choices.0.message.content）。空にすると応答全体を文字列化。",
+
+    "tool_calls_path": "data.tool_calls",
+    "__tool_calls_note__": "任意。ツール呼び出し配列の取り出し先。過剰エージェンシー/ツール悪用の検出精度が上がる。無ければ削除可。",
+
+    "system": "TODO: あなたのアプリのシステムプロンプト（任意。漏えい検出の基準に使う。カナリア検査をしたい場合はここに固有のダミー秘密を入れる）。",
+    "timeout": 60,
+    "rate_limit_per_min": 30,
+    "__rate_limit_note__": "対象への負荷・コストを抑える。0で無制限。本番系は控えめに。"
+  },
+
+  "authorized": false,
+  "__authorized_note__": "true にするか CLI --authorize を付けない限り、mock以外の能動検査は実行されない。",
+
+  "scan": {
+    "probes": ["all"],
+    "__probes_note__": "['all'] / プローブID / 脆弱性ID(LLM01等) / グロブ(pi_*) のカンマ配列。HTML自己評価のレッドチーム計画から生成した一覧を貼ってもよい。",
+    "categories": ["llm", "agentic", "mcp"],
+    "__categories_note__": "llm | agentic | infra | mcp | all。infraはpassive中心（手動点検）。",
+    "max_payloads_per_probe": 0,
+    "mutation": {
+      "enabled": true,
+      "max_variants": 6,
+      "recursive_depth": 2,
+      "beam": 3,
+      "__note__": "未知脆弱性探索（変異＋回帰的深掘り）。負荷を下げたいなら enabled:false か数値を小さく。"
+    },
+    "unknown": { "enabled": true },
+    "dry_run": false
+  },
+
+  "report": {
+    "formats": ["md", "json", "html"],
+    "out_dir": "./aiva_report",
+    "title": "AI/エージェンティックAI 脆弱性検査レポート"
+  }
+}

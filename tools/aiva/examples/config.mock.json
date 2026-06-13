@@ -1,0 +1,12 @@
+{
+  "_comment": "ローカルmock（意図的に一部脆弱な擬似アプリ）を検査する。ネットワーク・APIキー不要。デモ/自己テスト用。",
+  "target": { "type": "mock" },
+  "authorized": true,
+  "scan": {
+    "probes": ["all"],
+    "categories": ["all"],
+    "mutation": { "enabled": true, "max_variants": 6, "recursive_depth": 2, "beam": 3 },
+    "unknown": { "enabled": true }
+  },
+  "report": { "formats": ["md", "json", "html"], "out_dir": "./aiva_report" }
+}

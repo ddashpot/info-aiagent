@@ -1,0 +1,152 @@
+"""aiva コマンドラインインタフェース。
+
+使用例::
+
+    python -m aiva scan                      # ローカルmockを検査（デモ・自己テスト）
+    python -m aiva scan --config conf.json    # BYO-endpointを検査
+    python -m aiva scan --config conf.json --authorize --format md,html
+    python -m aiva list-probes
+    python -m aiva list-vulns
+
+能動検査（mock以外）は対象所有者の許可が前提。設定の "authorized": true か
+CLI --authorize を明示しない限り実行を拒否する（責任ある利用のためのガード）。
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from typing import List, Optional
+
+from . import __version__
+from .catalog import Catalog
+from .config import load_config
+from .engine import Engine
+from .probes import load_probes, select_probes
+from .report import build_report_model, write_reports
+from .targets import build_target
+
+
+def _eprint(*a, **k):
+    print(*a, file=sys.stderr, **k)
+
+
+def cmd_list_probes(args) -> int:
+    probes = load_probes()
+    cat = Catalog.load()
+    for p in probes:
+        active = "active" if p.is_active else "passive"
+        print(f"{p.id:30s} {p.vuln:8s} [{active:7s}] {p.severity:8s} {p.title}")
+    print(f"\n合計 {len(probes)} プローブ / カタログ脆弱性 {len(cat.vulns)} 件", file=sys.stderr)
+    return 0
+
+
+def cmd_list_vulns(args) -> int:
+    cat = Catalog.load()
+    for v in cat.vulns:
+        print(f"{v['id']:10s} [{v['category']:8s}] {v.get('severity','?'):8s} {v['name']}")
+    return 0
+
+
+def cmd_scan(args) -> int:
+    cfg = load_config(args.config)
+
+    # CLIオーバーライド
+    if args.target:
+        cfg["target"]["type"] = args.target
+    if args.dry_run:
+        cfg["scan"]["dry_run"] = True
+    if args.no_mutation:
+        cfg["scan"]["mutation"]["enabled"] = False
+    if args.probes:
+        cfg["scan"]["probes"] = args.probes.split(",")
+    if args.categories:
+        cfg["scan"]["categories"] = args.categories.split(",")
+    if args.out:
+        cfg["report"]["out_dir"] = args.out
+    if args.format:
+        cfg["report"]["formats"] = args.format.split(",")
+    if args.authorize:
+        cfg["authorized"] = True
+
+    target_type = cfg["target"].get("type", "mock")
+
+    # --- 認可ゲート（mock以外の能動検査は明示同意が必須） ---
+    if target_type != "mock" and not cfg.get("authorized") and not cfg["scan"].get("dry_run"):
+        _eprint("✋ 能動検査には対象所有者の許可が必要です。")
+        _eprint("   設定に \"authorized\": true を入れるか、--authorize を付けて、")
+        _eprint("   あなたが検査対象を所有/明示的に検査許可されていることを確認してください。")
+        _eprint("   （許可なきスキャンは行わないでください。--dry-run で送信内容の確認は可能です）")
+        return 2
+
+    catalog = Catalog.load(args.catalog)
+    target = build_target(cfg["target"])
+    all_probes = load_probes()
+    probes = select_probes(all_probes,
+                           selectors=cfg["scan"].get("probes", ["all"]),
+                           categories=cfg["scan"].get("categories", ["all"]))
+    if not probes:
+        _eprint("対象プローブが0件です。--probes / --categories を確認してください。")
+        return 2
+
+    log = (lambda *a, **k: _eprint(*a, **k)) if not args.quiet else (lambda *a, **k: None)
+    log(f"aiva v{__version__} — 対象: {target.describe()}  プローブ {len(probes)} 件"
+        + ("  [DRY-RUN]" if cfg['scan'].get('dry_run') else ""))
+
+    engine = Engine(target, catalog, cfg["scan"], verbose=args.verbose, log=log)
+    result = engine.run(probes)
+
+    model = build_report_model(result, catalog, cfg["report"])
+    written = write_reports(model, cfg["report"])
+
+    s = result.summary()
+    print("\n=== 検査サマリ ===")
+    for k in ("vulnerable", "weak", "anomaly", "manual", "error", "pass", "skipped"):
+        if k in s:
+            print(f"  {k:11s}: {s[k]}")
+    print(f"  リクエスト数: {result.requests} / {result.duration_s}s")
+    if written:
+        print("レポート:")
+        for w in written:
+            print(f"  - {w}")
+
+    # 脆弱性が見つかればexit code 1（CI連携用）
+    return 1 if (s.get("vulnerable", 0) or s.get("weak", 0) or s.get("anomaly", 0)) else 0
+
+
+def build_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(prog="aiva",
+                                description="AI/エージェンティックAI 脆弱性アセスメント（汎用・依存ゼロ）")
+    p.add_argument("--version", action="version", version=f"aiva {__version__}")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sc = sub.add_parser("scan", help="ターゲットを検査する")
+    sc.add_argument("--config", help="スキャン設定JSON（examples/ 参照）")
+    sc.add_argument("--catalog", help="脆弱性カタログJSON（既定: リポジトリ直下）")
+    sc.add_argument("--target", choices=["mock", "http", "openai"], help="target.type を上書き")
+    sc.add_argument("--probes", help="カンマ区切り（プローブID/脆弱性ID/グロブ/all）")
+    sc.add_argument("--categories", help="カンマ区切り（llm,agentic,infra,all）")
+    sc.add_argument("--format", help="md,json,html のカンマ区切り")
+    sc.add_argument("--out", help="レポート出力先ディレクトリ")
+    sc.add_argument("--authorize", action="store_true", help="検査対象の所有/検査許可を明示する")
+    sc.add_argument("--dry-run", action="store_true", help="送信せず対象プローブのみ表示")
+    sc.add_argument("--no-mutation", action="store_true", help="変異・未知探索を無効化")
+    sc.add_argument("-v", "--verbose", action="store_true")
+    sc.add_argument("-q", "--quiet", action="store_true")
+    sc.set_defaults(func=cmd_scan)
+
+    lp = sub.add_parser("list-probes", help="プローブ一覧")
+    lp.set_defaults(func=cmd_list_probes)
+
+    lv = sub.add_parser("list-vulns", help="カタログの脆弱性一覧")
+    lv.set_defaults(func=cmd_list_vulns)
+    return p
+
+
+def main(argv: Optional[List[str]] = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

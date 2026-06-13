@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+aiva_report/
+/tmp/
+*.egg-info/
+build/
+dist/
+.eggs/

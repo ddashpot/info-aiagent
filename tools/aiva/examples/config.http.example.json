@@ -1,0 +1,29 @@
+{
+  "_comment": "任意のHTTP/JSON APIを検査する汎用例。${prompt}/${system}/${messages}/${env:NAME} を本文テンプレートで使える。response_path で応答テキストの取り出し先を指定。",
+  "target": {
+    "type": "http",
+    "url": "https://your-app.example.com/api/chat",
+    "method": "POST",
+    "headers": {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer ${env:APP_TOKEN}"
+    },
+    "body_template": {
+      "session_id": "aiva-scan",
+      "messages": "${messages}",
+      "user_input": "${prompt}"
+    },
+    "response_path": "data.reply",
+    "tool_calls_path": "data.tool_calls",
+    "timeout": 60,
+    "rate_limit_per_min": 30
+  },
+  "authorized": false,
+  "scan": {
+    "probes": ["all"],
+    "categories": ["all"],
+    "mutation": { "enabled": true, "max_variants": 6, "recursive_depth": 2, "beam": 3 },
+    "unknown": { "enabled": true }
+  },
+  "report": { "formats": ["md", "json", "html"], "out_dir": "./aiva_report" }
+}
