@@ -612,9 +612,12 @@ function riskColor(r){ // 0..5 residual risk → green→red
 
 // ---- タブ ----
 function switchTab(name){
+  const valid=['dashboard','assess','coverage','redteam'];
+  if(!valid.includes(name)) name='dashboard';
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+name));
   document.getElementById('panel').classList.toggle('hidden', name!=='assess');
+  if(location.hash.slice(1)!==name){ try{ history.replaceState(null,'','#'+name); }catch(_){ location.hash=name; } }
   if(name==='dashboard') renderDashboard();
   if(name==='assess') renderCards();
   if(name==='coverage') renderCoverage();
@@ -641,6 +644,10 @@ function init(){
   document.getElementById('rt-copy-config').addEventListener('click',()=>copy(document.getElementById('rt-config').textContent||(genPlan(),document.getElementById('rt-config').textContent)));
   document.getElementById('rt-copy-md').addEventListener('click',()=>copy(document.getElementById('rt-md').textContent||(genPlan(),document.getElementById('rt-md').textContent)));
   renderDashboard(); renderCards(); genPlan();
+  // URLハッシュで初期タブを選択（外部ランディングからのディープリンク対応）
+  const initial=(location.hash||'').slice(1);
+  if(initial) switchTab(initial);
+  window.addEventListener('hashchange',()=>{ const h=(location.hash||'').slice(1); if(h) switchTab(h); });
 }
 function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
 function escapeAttr(s){ return escapeHtml(s).replace(/'/g,'&#39;'); }
