@@ -1,111 +1,379 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI / エージェンティックAI セキュリティ評価スイート</title>
-<meta name="description" content="OWASP LLM Top10 / OWASP Agentic Threats / MITRE ATLAS / NIST AI RMF 準拠。AI・エージェンティックAIの脆弱性カタログ、自己評価、網羅性カバレッジ、汎用スキャナ(aiva)。">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>AI / エージェンティックAI セキュリティ評価スイート | Agent Platform</title>
+<meta name="description" content="OWASP LLM Top10 2025 / OWASP Agentic Threats / MITRE ATLAS / NIST AI RMF 準拠。AI・エージェンティックAIの脆弱性カタログ、実装コントロールの自己評価、網羅性カバレッジ、汎用スキャナ(aiva)を一気通貫で。" />
+<meta name="theme-color" content="#16181d" />
+<meta name="color-scheme" content="light" />
+<link rel="canonical" href="./security.html" />
+
+<!-- favicon (index と共通: inline SVG) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%2316181d'/%3E%3Cpath%20d='M8%2022V10h3.2l4.6%208.1L20.4%2010h3.2v12h-2.9v-6.7l-3.4%206h-1.8l-3.4-6V22z'%20fill='%2334d8c9'/%3E%3C/svg%3E" />
+
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Agent Platform" />
+<meta property="og:title" content="AI / エージェンティックAI セキュリティ評価スイート" />
+<meta property="og:description" content="脆弱性の体系化 → 実装コントロールの自己評価 → 網羅性の可視化 → 汎用スキャナによる能動検査までを一気通貫。OWASP/ATLAS/NIST 準拠。" />
+<meta property="og:image" content="./assets/ogp.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="AI セキュリティ評価スイート" />
+<meta name="twitter:description" content="OWASP/ATLAS/NIST 準拠。脆弱性カタログ・自己評価・カバレッジ・汎用スキャナを一気通貫で。" />
+<meta name="twitter:image" content="./assets/ogp.png" />
+
+<!-- 構造化データ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "AI セキュリティ評価スイート",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "Web",
+  "description": "AI・エージェンティックAIの脆弱性カタログ、自己評価、カバレッジ可視化、汎用スキャナ。OWASP LLM Top10 / OWASP Agentic Threats / MITRE ATLAS / NIST AI RMF 準拠。",
+  "inLanguage": "ja",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "JPY" },
+  "publisher": { "@type": "Organization", "name": "Agent Platform" }
+}
+</script>
+
+<!-- Fonts: Fraunces(display) / Noto Sans JP(本文) / JetBrains Mono(数値・コード) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
 <style>
-:root{--bg1:#0e1320;--bg2:#131c30;--card:#1a2440;--line:#2a3754;--fg:#e9eefc;--mut:#93a6cc;--acc:#6ea8ff;--acc2:#9b7dff}
-*{box-sizing:border-box}html,body{margin:0}
-body{background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--fg);
- font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;line-height:1.7;min-height:100vh}
-a{color:var(--acc);text-decoration:none}
-.wrap{max-width:980px;margin:0 auto;padding:28px 20px 64px}
-header.hero{text-align:center;padding:26px 0 8px}
-.eyebrow{color:var(--acc2);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
-h1{font-size:26px;margin:6px 0 8px}
-.sub{color:var(--mut);font-size:14px;max-width:680px;margin:0 auto}
-.frameworks{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:16px 0 8px}
-.frameworks span{font-size:11.5px;color:var(--mut);background:#0e1728;border:1px solid var(--line);border-radius:999px;padding:4px 10px}
-.cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:18px 0 6px}
-.btn{display:inline-block;background:var(--acc);color:#04122e;font-weight:700;border-radius:10px;padding:11px 18px;font-size:14px}
-.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:600}
-h2{font-size:16px;margin:30px 0 12px;border-left:3px solid var(--acc);padding-left:10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;display:block;color:var(--fg)}
-.card:hover{border-color:var(--acc)}
-.card .ic{font-size:22px}
-.card h3{margin:8px 0 4px;font-size:15px}
-.card p{margin:0;color:var(--mut);font-size:12.8px}
-.card .go{color:var(--acc);font-size:12px;margin-top:8px;display:inline-block}
-.steps{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 18px}
-.steps li{margin:8px 0;font-size:13.5px}
-pre{background:#0a1120;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12.5px}
-code{background:#0c1322;padding:1px 6px;border-radius:5px;font-size:12.5px}
-.kpis{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
-.kpi{background:#0e1728;border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center;min-width:120px}
-.kpi b{display:block;font-size:20px}.kpi span{color:var(--mut);font-size:11.5px}
-footer{color:var(--mut);font-size:12px;text-align:center;margin-top:34px}
-.note{color:var(--mut);font-size:12.5px;background:rgba(155,125,255,.07);border:1px solid var(--line);border-left:3px solid var(--acc2);border-radius:8px;padding:10px 12px;margin:10px 0}
+/* ============================================================
+   Design system — index.html と共通 ("Spec sheet × Dev tool")
+   Paper ground + ink type + single teal accent.
+   意味色(緑/黄/赤)はデータ/重大度表示のみに限定。
+   ============================================================ */
+:root{
+  /* paper & ink */
+  --paper:#f6f4ee;
+  --paper-2:#efece4;
+  --surface:#ffffff;
+  --ink:#171a1f;
+  --ink-2:#3c424b;
+  --muted:#6c7079;
+  --line:#e6e1d7;
+  --line-2:#d8d2c6;
+
+  /* single brand accent: deep teal */
+  --accent:#0e7c86;
+  --accent-ink:#0a5b63;
+  --accent-soft:#d6efec;
+  --accent-bg:#eaf6f4;
+
+  /* semantic — severity / data areas only */
+  --crit:#b3261e;   --crit-bg:#fbe4e1;
+  --high:#a85a13;   --high-bg:#fbf0dc;
+  --med:#8a6d00;    --med-bg:#f7eecb;
+  --low:#15803d;    --low-bg:#dcfce7;
+
+  --shadow-sm:0 1px 2px rgba(23,26,31,.05);
+  --shadow:0 10px 34px rgba(23,26,31,.10);
+
+  --r:14px; --r-sm:10px;
+
+  --font-display:"Fraunces","Noto Sans JP",Georgia,serif;
+  --font-sans:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --tap:44px;
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{
+  margin:0;
+  font-family:var(--font-sans);
+  color:var(--ink);
+  line-height:1.65;
+  font-size:14px;
+  letter-spacing:.01em;
+  background-color:var(--paper);
+  background-image:radial-gradient(rgba(23,26,31,.045) 1px, transparent 1px);
+  background-size:22px 22px;
+  background-position:-11px -11px;
+  min-height:100vh;
+}
+a{color:var(--accent-ink);text-decoration:none}
+::selection{background:var(--accent-soft);color:var(--accent-ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:200;background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;transition:top .15s}
+.skip-link:focus{top:12px}
+
+/* ============================================================
+   Brand bar — index.html と共通
+   ============================================================ */
+.brandbar{
+  position:sticky;top:0;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px clamp(14px,4vw,40px);
+  background:rgba(246,244,238,.82);
+  backdrop-filter:saturate(140%) blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.brand__mark{flex:0 0 auto;width:32px;height:32px;border-radius:8px;background:var(--ink);color:#34d8c9;
+  display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:19px}
+.brand__name{font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+.brand__tag{color:var(--muted);font-size:12px;border-left:1px solid var(--line-2);padding-left:11px;white-space:nowrap}
+.toolbar{display:flex;align-items:center;gap:8px}
+.cta{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;
+  border:0;border-radius:10px;padding:9px 15px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;
+  min-height:var(--tap);transition:.15s}
+.cta:hover{background:var(--accent-ink);transform:translateY(-1px)}
+.icon-btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);color:var(--ink-2);
+  border:1px solid var(--line-2);border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;font-size:13px;
+  cursor:pointer;min-height:var(--tap);transition:.15s}
+.icon-btn:hover{border-color:var(--ink-2);color:var(--ink)}
+@media(max-width:560px){.brand__tag{display:none}.toolbar .label-lg{display:none}}
+
+.app{max-width:1100px;margin:0 auto;padding:30px clamp(14px,4vw,40px) 90px}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero{text-align:center;margin:14px 0 30px}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);
+  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink)}
+.eyebrow::before,.eyebrow::after{content:"";width:22px;height:2px;background:var(--accent)}
+.hero h1{font-family:var(--font-display);font-weight:600;margin:14px auto 10px;
+  font-size:clamp(27px,5vw,44px);letter-spacing:-.02em;line-height:1.12;max-width:16em}
+.hero .sub{margin:0 auto;color:var(--ink-2);max-width:680px;font-size:15px}
+.frameworks{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:18px 0 4px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 12px;
+  background:var(--surface);color:var(--ink-2);font-size:12px;font-weight:600;border:1px solid var(--line-2);line-height:1.4}
+.pill.brand{background:var(--accent-bg);color:var(--accent-ink);border-color:transparent}
+.hero__cta{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0 6px}
+.btn-hero{display:inline-flex;align-items:center;gap:8px;border-radius:11px;padding:13px 22px;font:inherit;
+  font-weight:700;font-size:15px;cursor:pointer;min-height:var(--tap);transition:.15s;border:1px solid transparent}
+.btn-hero.primary{background:var(--ink);color:#fff}
+.btn-hero.primary:hover{background:#000;transform:translateY(-1px)}
+.btn-hero.ghost{background:var(--surface);color:var(--ink);border-color:var(--line-2)}
+.btn-hero.ghost:hover{border-color:var(--ink-2);transform:translateY(-1px)}
+.btn-hero .arrow{transition:transform .15s}
+.btn-hero:hover .arrow{transform:translateX(3px)}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:680px;margin:26px auto 0}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 10px;
+  text-align:center;box-shadow:var(--shadow-sm)}
+.kpi b{display:block;font-family:var(--font-mono);font-weight:700;font-size:clamp(20px,4vw,28px);color:var(--ink);letter-spacing:-.02em}
+.kpi span{display:block;color:var(--muted);font-size:11.5px;margin-top:3px}
+@media(max-width:560px){.kpis{grid-template-columns:repeat(2,1fr)}}
+
+/* ============================================================
+   Section heads
+   ============================================================ */
+h2.sec-h{font-family:var(--font-display);font-weight:600;font-size:clamp(19px,3vw,24px);
+  letter-spacing:-.015em;margin:42px 0 6px;display:flex;align-items:baseline;gap:10px}
+h2.sec-h .num{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
+.sec-lead{color:var(--ink-2);font-size:14px;margin:0 0 18px;max-width:720px}
+
+/* ============================================================
+   Tool cards grid
+   ============================================================ */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;
+  display:flex;flex-direction:column;color:var(--ink);box-shadow:var(--shadow-sm);transition:.16s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
+.card .ic{width:42px;height:42px;border-radius:11px;background:var(--accent-bg);color:var(--accent-ink);
+  display:grid;place-items:center;font-size:21px;margin-bottom:12px}
+.card h3{font-family:var(--font-display);font-weight:600;margin:0 0 6px;font-size:16px;letter-spacing:-.01em}
+.card p{margin:0;color:var(--ink-2);font-size:13px;line-height:1.6}
+.card .go{margin-top:auto;padding-top:12px;color:var(--accent-ink);font-size:13px;font-weight:700;
+  display:inline-flex;align-items:center;gap:5px}
+.card .go .arrow{transition:transform .15s}
+.card:hover .go .arrow{transform:translateX(3px)}
+.card .ext{font-family:var(--font-mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* ============================================================
+   Note / callout
+   ============================================================ */
+.note{background:var(--accent-bg);border:1px solid var(--accent-soft);border-left:3px solid var(--accent);
+  border-radius:var(--r-sm);padding:13px 15px;color:var(--accent-ink);font-size:13px;margin:0 0 14px}
+.note code{background:rgba(10,91,99,.1);color:var(--accent-ink)}
+
+/* ============================================================
+   Code block (paper の上に置く ink パネル)
+   ============================================================ */
+.codebox{background:var(--ink);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.codebox .bar{display:flex;align-items:center;gap:7px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.codebox .bar .dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.18)}
+.codebox .bar .t{margin-left:8px;font-family:var(--font-mono);font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.04em}
+pre{margin:0;padding:16px;overflow-x:auto;font-family:var(--font-mono);font-size:12.5px;line-height:1.8;color:#e9eefc}
+pre .cm{color:#7c8aa5}
+pre .cmd{color:#34d8c9;font-weight:700}
+code{font-family:var(--font-mono);background:var(--paper-2);padding:1px 6px;border-radius:5px;font-size:12.5px;color:var(--ink)}
+
+/* ============================================================
+   Principles list
+   ============================================================ */
+.principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.principle{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.principle .k{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--accent-ink);display:block;margin-bottom:6px}
+.principle h3{font-family:var(--font-display);font-weight:600;margin:0 0 6px;font-size:15px;letter-spacing:-.01em}
+.principle p{margin:0;color:var(--ink-2);font-size:13px;line-height:1.6}
+.principle p code{font-size:11.5px}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.sitefoot{margin-top:54px;padding-top:22px;border-top:1px solid var(--line);
+  display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between;
+  color:var(--muted);font-size:12.5px}
+.sitefoot a{color:var(--ink-2);font-weight:600}
+.sitefoot a:hover{color:var(--accent-ink)}
+.sitefoot .links{display:flex;gap:18px;flex-wrap:wrap}
 </style>
 </head>
 <body>
-<div class="wrap">
+<a class="skip-link" href="#main">本文へスキップ</a>
+
+<!-- Brand bar — index.html と共通 -->
+<header class="brandbar">
+  <a class="brand" href="./" aria-label="Agent Platform ホーム（設計ガイド）">
+    <span class="brand__mark" aria-hidden="true">A</span>
+    <span class="brand__name">Agent&nbsp;Platform</span>
+    <span class="brand__tag">セキュリティ評価</span>
+  </a>
+  <div class="toolbar">
+    <a class="icon-btn" href="./" aria-label="AIエージェント設計ガイドへ戻る">🧭 <span class="label-lg">設計ガイド</span></a>
+    <a class="cta" href="ai_security_assessment.html#dashboard">自己評価をはじめる</a>
+  </div>
+</header>
+
+<main class="app" id="main">
+
+  <!-- ===== Hero ===== -->
   <header class="hero">
-    <div class="eyebrow">AI Security Assessment Suite</div>
-    <h1>🛡 AI / エージェンティックAI セキュリティ評価スイート</h1>
-    <p class="sub">AI（LLM）アプリとエージェンティックAIの脆弱性を体系化し、実装コントロールの自己評価・網羅性の可視化・汎用スキャナによる能動検査までを一気通貫で行うためのツール群です。</p>
-    <div class="frameworks">
-      <span>OWASP LLM Top10 2025</span><span>OWASP Agentic Threats</span>
-      <span>MITRE ATLAS</span><span>NIST AI RMF</span><span>ISO/IEC 42001</span>
+    <span class="eyebrow">AI Security Assessment Suite</span>
+    <h1>AI・エージェンティックAI<br>セキュリティ評価スイート</h1>
+    <p class="sub">脆弱性の体系化 → 実装コントロールの自己評価 → 網羅性の可視化 → 汎用スキャナによる能動検査まで。AI（LLM）アプリとエージェンティックAIの安全性を、一気通貫で点検するためのツール群です。</p>
+
+    <div class="frameworks" aria-label="準拠フレームワーク">
+      <span class="pill brand">OWASP LLM Top10 2025</span>
+      <span class="pill">OWASP Agentic Threats</span>
+      <span class="pill">MITRE ATLAS</span>
+      <span class="pill">NIST AI RMF</span>
+      <span class="pill">ISO/IEC 42001</span>
     </div>
-    <div class="cta">
-      <a class="btn" href="ai_security_assessment.html#dashboard">自己評価をはじめる →</a>
-      <a class="btn ghost" href="ai_security_assessment.html#coverage">カバレッジ盤を見る</a>
+
+    <div class="hero__cta">
+      <a class="btn-hero primary" href="ai_security_assessment.html#dashboard">自己評価をはじめる <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="btn-hero ghost" href="ai_security_assessment.html#coverage">カバレッジ盤を見る</a>
     </div>
+
     <div class="kpis">
       <div class="kpi"><b>34</b><span>脆弱性カタログ</span></div>
       <div class="kpi"><b>57</b><span>検査プローブ</span></div>
       <div class="kpi"><b>26</b><span>統合ツール</span></div>
-      <div class="kpi"><b>100%</b><span>網羅(設定監査込)</span></div>
+      <div class="kpi"><b>100%</b><span>網羅（設定監査込）</span></div>
     </div>
   </header>
 
-  <h2>ツール</h2>
+  <!-- ===== Tools ===== -->
+  <h2 class="sec-h"><span class="num">01</span>ツール</h2>
+  <p class="sec-lead">どれもブラウザ／CLI 単体で動作します。自己評価はブラウザに保存され、ネットワーク不要で始められます。</p>
   <div class="grid">
     <a class="card" href="ai_security_assessment.html#assess">
-      <div class="ic">📋</div><h3>脆弱性カタログ＆自己評価</h3>
+      <div class="ic" aria-hidden="true">📋</div>
+      <h3>脆弱性カタログ＆自己評価</h3>
       <p>34脆弱性を surface×failure（MECE）で整理。実装コントロールを点検し、深刻度重み付きで態勢スコアと是正バックログを算定。</p>
-      <span class="go">開く →</span></a>
+      <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
     <a class="card" href="ai_security_assessment.html#dashboard">
-      <div class="ic">📊</div><h3>評価ダッシュボード</h3>
+      <div class="ic" aria-hidden="true">📊</div>
+      <h3>評価ダッシュボード</h3>
       <p>総合セキュリティ態勢・重大ギャップ・コントロールカバレッジ。回答更新で回帰的に再計算。</p>
-      <span class="go">開く →</span></a>
+      <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
     <a class="card" href="ai_security_assessment.html#coverage">
-      <div class="ic">🗺️</div><h3>カバレッジ盤</h3>
+      <div class="ic" aria-hidden="true">🗺️</div>
+      <h3>カバレッジ盤</h3>
       <p>影響サーフェス×失敗モードのリスク・ヒートマップと、脆弱性→対応する外部ツールの網羅マトリクス。</p>
-      <span class="go">開く →</span></a>
+      <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
     <a class="card" href="ai_security_assessment.html#redteam">
-      <div class="ic">🎯</div><h3>レッドチーム検査計画</h3>
-      <p>選択範囲のプローブを集約し、スキャナ用設定とテスト計画(Markdown)を生成・エクスポート。</p>
-      <span class="go">開く →</span></a>
+      <div class="ic" aria-hidden="true">🎯</div>
+      <h3>レッドチーム検査計画</h3>
+      <p>選択範囲のプローブを集約し、スキャナ用設定とテスト計画（Markdown）を生成・エクスポート。</p>
+      <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
     <a class="card" href="https://github.com/ddashpot/info-aiagent/tree/main/tools/aiva" target="_blank" rel="noopener">
-      <div class="ic">⚙️</div><h3>aiva スキャナ（CLI）</h3>
-      <p>依存ゼロのPython製・BYO-endpoint能動スキャナ。既知＋未知（変異・回帰探索）、garak/mcp-scan統合、SARIF出力。</p>
-      <span class="go">GitHubで見る →</span></a>
+      <div class="ic" aria-hidden="true">⚙️</div>
+      <h3>aiva スキャナ（CLI）</h3>
+      <p>依存ゼロの Python 製・BYO-endpoint 能動スキャナ。既知＋未知（変異・回帰探索）、garak/mcp-scan 統合、SARIF 出力。</p>
+      <span class="go"><span class="ext">GitHub</span> リポジトリで見る <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
     <a class="card" href="https://github.com/ddashpot/info-aiagent/blob/main/ai_security_catalog.json" target="_blank" rel="noopener">
-      <div class="ic">📚</div><h3>脆弱性カタログ(JSON)</h3>
+      <div class="ic" aria-hidden="true">📚</div>
+      <h3>脆弱性カタログ（JSON）</h3>
       <p>脆弱性 × コントロール × 実装基盤 × フレームワーク・マッピング × プローブ。HTML・スキャナ共通の真実の源。</p>
-      <span class="go">GitHubで見る →</span></a>
+      <span class="go"><span class="ext">GitHub</span> ソースを見る <span class="arrow" aria-hidden="true">→</span></span>
+    </a>
   </div>
 
-  <h2>スキャナを使う（CLI）</h2>
-  <div class="note">能動検査は対象所有者の許可が前提の防御的用途です。mock以外は <code>--authorize</code> を明示してください。</div>
-  <pre>pip install -e tools/aiva            # aiva コマンド
-aiva scan --target mock --format md,html,sarif   # デモ（ネットワーク不要）
-aiva coverage --arch examples/architecture.example.json   # 網羅性（設定監査込み）
-aiva scan --config your.json --authorize --with-tools mcp-scan --format sarif   # 自社アプリ＋外部ツール統合</pre>
+  <!-- ===== CLI ===== -->
+  <h2 class="sec-h"><span class="num">02</span>スキャナを使う（CLI）</h2>
+  <p class="sec-lead">既存アプリを能動検査します。まずは mock でデモ（ネットワーク・APIキー不要）。</p>
+  <div class="note">⚠ 能動検査は<b>対象所有者の許可</b>が前提の防御的用途です。mock 以外は <code>--authorize</code> を明示してください。</div>
+  <div class="codebox">
+    <div class="bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="t">bash</span></div>
+<pre><span class="cm"># aiva コマンドをインストール</span>
+<span class="cmd">pip</span> install -e tools/aiva
 
-  <h2>このスイートについて</h2>
-  <ul class="steps">
-    <li><b>MECE設計</b>：脆弱性は surface(10)×failure_mode(7) の直交軸、検査は 生成戦略×判定オラクル の2軸。</li>
-    <li><b>既知＋未知</b>：OWASP/ATLAS対応プローブに加え、変異エンジン・回帰的深掘り・挙動異常検知で未知を炙り出す。</li>
-    <li><b>網羅性</b>：能動検査＋外部ツール（25+）＋設定監査で全脆弱性をカバー。<code>aiva coverage</code> で空白を可視化。</li>
-    <li><b>回帰運用</b>：脅威インテイク（収集→反映→回帰）とGitHub Actionで継続的に再検査。</li>
-  </ul>
+<span class="cm"># デモ検査（ネットワーク不要）</span>
+<span class="cmd">aiva</span> scan --target mock --format md,html,sarif
 
-  <footer>workapps.ddashpot.com ・ 単一HTMLで動作（自己評価はブラウザに保存）・ MITライセンス</footer>
-</div>
+<span class="cm"># 網羅性の確認（設定監査込み）</span>
+<span class="cmd">aiva</span> coverage --arch examples/architecture.example.json
+
+<span class="cm"># 自社アプリ＋外部ツール統合（所有/許可している対象のみ）</span>
+<span class="cmd">aiva</span> scan --config your.json --authorize --with-tools mcp-scan --format sarif</pre>
+  </div>
+
+  <!-- ===== About ===== -->
+  <h2 class="sec-h"><span class="num">03</span>このスイートについて</h2>
+  <p class="sec-lead">一過性のチェックリストではなく、追加・更新で育て、回帰的に再検査し続ける設計です。</p>
+  <div class="principles">
+    <div class="principle">
+      <span class="k">MECE 設計</span>
+      <h3>直交する2軸で整理</h3>
+      <p>脆弱性は surface(10)×failure_mode(7) の直交軸、検査は 生成戦略×判定オラクル の2軸で網羅。</p>
+    </div>
+    <div class="principle">
+      <span class="k">既知＋未知</span>
+      <h3>未知も炙り出す</h3>
+      <p>OWASP/ATLAS 対応プローブに加え、変異エンジン・回帰的深掘り・挙動異常検知で未知を発見。</p>
+    </div>
+    <div class="principle">
+      <span class="k">網羅性</span>
+      <h3>空白を可視化</h3>
+      <p>能動検査＋外部ツール（25+）＋設定監査で全脆弱性をカバー。<code>aiva coverage</code> で空白を確認。</p>
+    </div>
+    <div class="principle">
+      <span class="k">回帰運用</span>
+      <h3>継続的に再検査</h3>
+      <p>脅威インテイク（収集→反映→回帰）と GitHub Action で、発見した未知パターンを既知化して再検査。</p>
+    </div>
+  </div>
+
+  <footer class="sitefoot">
+    <span>workapps.ddashpot.com ・ 単一HTMLで動作（自己評価はブラウザに保存）・ MIT ライセンス</span>
+    <span class="links">
+      <a href="./">設計ガイド</a>
+      <a href="ai_security_assessment.html#dashboard">自己評価</a>
+      <a href="https://github.com/ddashpot/info-aiagent" target="_blank" rel="noopener">GitHub</a>
+    </span>
+  </footer>
+
+</main>
 </body>
 </html>
