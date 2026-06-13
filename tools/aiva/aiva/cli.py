@@ -88,6 +88,34 @@ def cmd_list_oracles(args) -> int:
     return 0
 
 
+def cmd_tools(args) -> int:
+    from .integrations import load_registry, tool_availability
+    reg = load_registry()
+    avail = tool_availability(reg)
+    for t in reg.get("tools", []):
+        mark = "✓" if avail.get(t["id"]) else " "
+        print(f"[{mark}] {t['id']:14s} {t['kind']:14s} covers={','.join(t.get('covers', []))}")
+    n_av = sum(1 for v in avail.values() if v)
+    print(f"\n導入済み {n_av}/{len(avail)} ・ 防御(コントロール実装)は registry.defenses 参照", file=sys.stderr)
+    return 0
+
+
+def cmd_coverage(args) -> int:
+    import json as _json
+    from .coverage import analyze, render_markdown
+    from .integrations import load_registry
+    catalog = Catalog.load(args.catalog)
+    model = analyze(catalog, only_available=args.only_available)
+    if args.format == "json":
+        print(_json.dumps(model, ensure_ascii=False, indent=2))
+    else:
+        print(render_markdown(model, load_registry()))
+    c = model["counts"]
+    print(f"\n=== 網羅性: 対応可能 {model['active_or_passive_or_tool_pct']}% "
+          f"(自動検査 {model['covered_pct']}%) / 未カバー {c['gap']} 件 ===", file=sys.stderr)
+    return 0
+
+
 def cmd_scan(args) -> int:
     cfg = load_config(args.config)
 
@@ -183,6 +211,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     lo = sub.add_parser("list-oracles", help="判定オラクルクラスと検出器の対応（MECE）")
     lo.set_defaults(func=cmd_list_oracles)
+
+    to = sub.add_parser("tools", help="統合可能な外部セキュリティツールと導入状況")
+    to.set_defaults(func=cmd_tools)
+
+    cv = sub.add_parser("coverage", help="網羅性(カバレッジ)とギャップを算定")
+    cv.add_argument("--catalog", help="脆弱性カタログJSON")
+    cv.add_argument("--format", choices=["md", "json"], default="md")
+    cv.add_argument("--only-available", action="store_true",
+                    help="導入済みツールのみで集計（既定はレジストリ全ツールの潜在カバレッジ）")
+    cv.set_defaults(func=cmd_coverage)
 
     ig = sub.add_parser("ingest", help="threat_intake の脅威を検査(プローブ)へ反映")
     ig.add_argument("--intake-dir", help="インテイク・ディレクトリ（既定: tools/aiva/threat_intake）")
