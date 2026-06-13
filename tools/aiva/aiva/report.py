@@ -110,7 +110,43 @@ def write_reports(model: Dict[str, Any], cfg: Dict[str, Any]) -> List[str]:
         with open(p, "w", encoding="utf-8") as fh:
             json.dump(render_sarif(model), fh, ensure_ascii=False, indent=2)
         written.append(p)
+    if "junit" in formats:
+        p = os.path.join(out_dir, "report.junit.xml")
+        with open(p, "w", encoding="utf-8") as fh:
+            fh.write(render_junit(model))
+        written.append(p)
     return written
+
+
+def render_junit(model: Dict[str, Any]) -> str:
+    """JUnit XML（CIのテストレポータが各プローブをテストケースとして表示）。
+
+    vulnerable/weak/anomaly → failure、manual/skipped → skipped、それ以外 → 成功。
+    """
+    from xml.sax.saxutils import escape, quoteattr
+    findings = model["findings"]
+    fail_st = {"vulnerable", "weak", "anomaly"}
+    skip_st = {"manual", "skipped"}
+    failures = sum(1 for f in findings if f["status"] in fail_st)
+    skipped = sum(1 for f in findings if f["status"] in skip_st)
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+    suite_attrs = (f'name="aiva" tests="{len(findings)}" failures="{failures}" '
+                   f'skipped="{skipped}" time="{model["meta"].get("duration_s",0)}"')
+    lines.append(f'<testsuites><testsuite {suite_attrs}>')
+    for f in findings:
+        cls = f'{f["category"]}.{f["vuln_id"]}'
+        name = f'{f["probe_id"]} {f["title"]}'
+        lines.append(f'  <testcase classname={quoteattr(cls)} name={quoteattr(name)}>')
+        if f["status"] in fail_st:
+            msg = f'[{f["vuln_id"]} {f["vuln_name"]}] {f["status_label"]} score={f["score"]}'
+            detail = f'payload: {f.get("best_payload","")}\nresponse: {f.get("best_response","")}'
+            lines.append(f'    <failure message={quoteattr(msg)} type={quoteattr(f["severity"])}>'
+                         f'{escape(detail)}</failure>')
+        elif f["status"] in skip_st:
+            lines.append(f'    <skipped message={quoteattr(f.get("note") or f["status_label"])}/>')
+        lines.append('  </testcase>')
+    lines.append('</testsuite></testsuites>')
+    return "\n".join(lines)
 
 
 _SARIF_LEVEL = {"vulnerable": "error", "weak": "warning", "anomaly": "note"}

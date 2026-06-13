@@ -58,7 +58,7 @@ jobs:
 
       - name: Mock scan (integration smoke / detection regression) + SARIF
         run: |
-          aiva scan --target mock --format json,sarif --out aiva_report -q || true
+          aiva scan --target mock --format json,sarif,junit --out aiva_report -q || true
           python - <<'PY'
           import json
           r=json.load(open('aiva_report/report.json'))
