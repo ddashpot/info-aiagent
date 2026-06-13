@@ -23,6 +23,7 @@ class Probe:
     payloads: List[str] = field(default_factory=list)
     turns: List[str] = field(default_factory=list)
     detectors: List[Dict[str, Any]] = field(default_factory=list)
+    control_variant: str = ""  # 差分オラクル用：対照（素の要求版）。これが拒否され主payloadが追従なら枠組み依存バイパス
     note: str = ""
 
     @property
@@ -52,7 +53,8 @@ def load_probes(path: Optional[str] = None) -> List[Probe]:
             expect=p.get("expect", "refuse"), mutatable=p.get("mutatable", False),
             technique=p.get("technique", ""), tags=p.get("tags", []),
             payloads=p.get("payloads", []), turns=p.get("turns", []),
-            detectors=p.get("detectors", []), note=p.get("note", ""),
+            detectors=p.get("detectors", []), control_variant=p.get("control_variant", ""),
+            note=p.get("note", ""),
         ))
     return out
 

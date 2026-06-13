@@ -1,0 +1,109 @@
+name: aiva security regression
+
+# 「収集 → テスト反映 → 回帰」ループの自動化。
+# - push / PR: 投入済み脅威がプローブへ反映済みか（ingest --check）、テスト、mock回帰を検証。
+# - 週次 / 手動: コレクタで新たな脅威を収集→反映し、差分があればPRを起票。
+
+on:
+  push:
+    paths:
+      - 'tools/aiva/**'
+      - 'ai_security_catalog.json'
+      - '.github/workflows/aiva.yml'
+  pull_request:
+    paths:
+      - 'tools/aiva/**'
+      - 'ai_security_catalog.json'
+  schedule:
+    - cron: '17 3 * * 1'   # 毎週月曜 03:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install aiva (zero-dependency)
+        run: pip install -e tools/aiva
+
+      - name: Intake reflected into probes? (regression gate)
+        run: aiva ingest --check
+
+      - name: Unit tests
+        run: python -m unittest discover -s tools/aiva/tests -v
+
+      - name: Catalog / probes integrity
+        run: |
+          python - <<'PY'
+          import json
+          c=json.load(open('ai_security_catalog.json'))
+          p=json.load(open('tools/aiva/aiva/data/probes.json'))
+          ids={v['id'] for v in c['vulnerabilities']}
+          # 全プローブの vuln はカタログに存在し、全脆弱性は MECE 軸を持つ
+          for pr in p['probes']:
+              assert pr['vuln'] in ids, f"probe {pr['id']} -> unknown vuln {pr['vuln']}"
+          for v in c['vulnerabilities']:
+              assert v.get('surface') and v.get('failure_mode'), f"{v['id']} missing MECE axes"
+          print(f"OK: {len(c['vulnerabilities'])} vulns / {len(p['probes'])} probes")
+          PY
+
+      - name: Mock scan (integration smoke / detection regression)
+        run: |
+          aiva scan --target mock --format json --out aiva_report -q || true
+          python - <<'PY'
+          import json
+          r=json.load(open('aiva_report/report.json'))
+          s=r['summary']
+          vuln=s.get('vulnerable',0)
+          print('summary:', s)
+          assert vuln >= 5, f"detection regression: only {vuln} vulnerable on mock"
+          PY
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiva-report
+          path: aiva_report/
+
+  collect-and-propose:
+    # 週次/手動のみ。コレクタで新たな脅威を収集→反映し、差分があればPRを起票。
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e tools/aiva
+
+      - name: Collect new threats (no-op unless collectors.json has feeds)
+        run: |
+          if [ -f tools/aiva/collectors.json ]; then
+            aiva collect --collectors tools/aiva/collectors.json
+          else
+            echo "collectors.json なし: 外部収集はスキップ（手動投入分のみ反映）"
+          fi
+
+      - name: Reflect into probes (and catalog)
+        run: aiva ingest --write
+
+      - name: Open PR if changes
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(aiva): ingest newly collected threats into probes"
+          title: "aiva: 新たに収集した脅威を検査へ反映"
+          body: |
+            自動収集された脅威を `aiva ingest --write` でプローブ／カタログへ反映しました。
+            内容を確認のうえマージしてください。
+          branch: aiva/auto-threat-intake
+          delete-branch: true

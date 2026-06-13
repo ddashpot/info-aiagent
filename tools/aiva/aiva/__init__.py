@@ -8,5 +8,5 @@
 HTML自己評価ツール ``ai_security_assessment.html`` と知見を共有する。
 """
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __all__ = ["__version__"]

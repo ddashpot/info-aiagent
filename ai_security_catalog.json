@@ -2,7 +2,7 @@
   "meta": {
     "name": "AI / エージェンティックAI 脆弱性・コントロールカタログ",
     "slug": "ai-security-catalog",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "updated": "2026-06-13",
     "language": "ja",
     "description": "AI（LLM）アプリおよびエージェンティックAIの脆弱性を体系化し、各脆弱性に対するコントロール（対策）と実装基盤、検査プローブ、準拠フレームワークへのマッピングを提供する共有ナレッジベース。HTML自己評価ツール（ai_security_assessment.html）と汎用スキャナ（tools/aiva）の双方が参照する。",
@@ -33,7 +33,134 @@
         "ref": "https://www.iso.org/standard/81230.html"
       }
     ],
-    "agent_patterns_ref": "SKILL.md（シーケンシャル系/スーパーバイザー系/スウォーム系の実装バリエーション）"
+    "agent_patterns_ref": "SKILL.md（シーケンシャル系/スーパーバイザー系/スウォーム系の実装バリエーション）",
+    "axes": {
+      "note": "OWASP-LLM / OWASP-Agentic / MITRE-ATLAS は相互に重複するソースであるため、本カタログは直交2軸(surface×failure_mode)を一次分類(MECE backbone)とし、各フレームワークIDは横断タグ(参照)として保持する。各脆弱性は (surface,failure_mode) の1セルに一意に対応する。",
+      "surface": [
+        {
+          "id": "input",
+          "name": "入力/プロンプト境界",
+          "desc": "ユーザ・外部データがモデルに入る境界"
+        },
+        {
+          "id": "model",
+          "name": "モデル/推論",
+          "desc": "基盤モデルの推論・記憶・既定挙動"
+        },
+        {
+          "id": "memory",
+          "name": "記憶/RAG/知識",
+          "desc": "短期/長期メモリ・ベクトルストア・取得知識"
+        },
+        {
+          "id": "tools",
+          "name": "ツール/アクション実行",
+          "desc": "関数・API・MCPツールの呼び出し"
+        },
+        {
+          "id": "orchestration",
+          "name": "オーケストレーション/多エージェント",
+          "desc": "計画・委任・エージェント間協調・人間介在"
+        },
+        {
+          "id": "identity",
+          "name": "ID/権限/認可",
+          "desc": "エージェント/ユーザの識別・資格・権限"
+        },
+        {
+          "id": "supplychain",
+          "name": "サプライチェーン",
+          "desc": "モデル・データ・拡張・依存の供給経路"
+        },
+        {
+          "id": "runtime",
+          "name": "実行基盤/ネットワーク",
+          "desc": "コード実行サンドボックス・計算資源・Egress"
+        },
+        {
+          "id": "output",
+          "name": "出力/下流連携",
+          "desc": "応答の下流消費・人間への提示"
+        },
+        {
+          "id": "observability",
+          "name": "可観測性/監査",
+          "desc": "ログ・トレース・帰属・監査証跡"
+        }
+      ],
+      "failure_mode": [
+        {
+          "id": "confidentiality",
+          "name": "機密性（開示）",
+          "desc": "情報・秘密・PIIの漏えい/開示"
+        },
+        {
+          "id": "integrity",
+          "name": "完全性（注入・汚染）",
+          "desc": "指示・データ・記憶・定義の改ざん/注入/汚染"
+        },
+        {
+          "id": "availability",
+          "name": "可用性（枯渇）",
+          "desc": "資源・コスト・人間監視の枯渇/DoS"
+        },
+        {
+          "id": "authorization",
+          "name": "認可（越権・過剰行動）",
+          "desc": "権限境界を越えた、または過剰な行動"
+        },
+        {
+          "id": "authenticity",
+          "name": "真正性（なりすまし）",
+          "desc": "エージェント/ユーザ/サービスの偽装"
+        },
+        {
+          "id": "accountability",
+          "name": "説明責任（追跡不能）",
+          "desc": "行為の記録・帰属の欠如、否認"
+        },
+        {
+          "id": "safety",
+          "name": "安全性/整合性",
+          "desc": "誤情報・ミスアライン・欺瞞・人間操作などの害"
+        }
+      ],
+      "overlaps": {
+        "model×confidentiality": [
+          "LLM02",
+          "LLM07"
+        ],
+        "supplychain×integrity": [
+          "LLM03",
+          "LLM04"
+        ],
+        "tools×authorization": [
+          "LLM06",
+          "ASI-T02",
+          "MCP-02"
+        ],
+        "model×safety": [
+          "LLM09",
+          "ASI-T07"
+        ],
+        "runtime×availability": [
+          "LLM10",
+          "ASI-T04"
+        ],
+        "orchestration×integrity": [
+          "ASI-T06",
+          "ASI-T12"
+        ],
+        "observability×accountability": [
+          "ASI-T08",
+          "INF-03"
+        ],
+        "identity×authenticity": [
+          "ASI-T09",
+          "INF-01"
+        ]
+      }
+    }
   },
   "severity_scale": [
     {
@@ -202,7 +329,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm01-prompt-injection/"
-      ]
+      ],
+      "surface": "input",
+      "failure_mode": "integrity"
     },
     {
       "id": "LLM02",
@@ -286,7 +415,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm02-sensitive-information-disclosure/"
-      ]
+      ],
+      "surface": "model",
+      "failure_mode": "confidentiality"
     },
     {
       "id": "LLM03",
@@ -358,7 +489,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm03-supply-chain/"
-      ]
+      ],
+      "surface": "supplychain",
+      "failure_mode": "integrity"
     },
     {
       "id": "LLM04",
@@ -430,7 +563,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm04-data-and-model-poisoning/"
-      ]
+      ],
+      "surface": "supplychain",
+      "failure_mode": "integrity"
     },
     {
       "id": "LLM05",
@@ -503,7 +638,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm05-improper-output-handling/"
-      ]
+      ],
+      "surface": "output",
+      "failure_mode": "integrity"
     },
     {
       "id": "LLM06",
@@ -585,7 +722,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm06-excessive-agency/"
-      ]
+      ],
+      "surface": "tools",
+      "failure_mode": "authorization"
     },
     {
       "id": "LLM07",
@@ -652,7 +791,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm07-system-prompt-leakage/"
-      ]
+      ],
+      "surface": "model",
+      "failure_mode": "confidentiality"
     },
     {
       "id": "LLM08",
@@ -721,7 +862,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm08-vector-and-embedding-weaknesses/"
-      ]
+      ],
+      "surface": "memory",
+      "failure_mode": "confidentiality"
     },
     {
       "id": "LLM09",
@@ -793,7 +936,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm09-misinformation/"
-      ]
+      ],
+      "surface": "model",
+      "failure_mode": "safety"
     },
     {
       "id": "LLM10",
@@ -867,7 +1012,9 @@
       ],
       "references": [
         "https://genai.owasp.org/llmrisk/llm10-unbounded-consumption/"
-      ]
+      ],
+      "surface": "runtime",
+      "failure_mode": "availability"
     },
     {
       "id": "ASI-T01",
@@ -938,7 +1085,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "memory",
+      "failure_mode": "integrity"
     },
     {
       "id": "ASI-T02",
@@ -1010,7 +1159,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "tools",
+      "failure_mode": "authorization"
     },
     {
       "id": "ASI-T03",
@@ -1081,7 +1232,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "identity",
+      "failure_mode": "authorization"
     },
     {
       "id": "ASI-T04",
@@ -1142,7 +1295,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "runtime",
+      "failure_mode": "availability"
     },
     {
       "id": "ASI-T05",
@@ -1202,7 +1357,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "orchestration",
+      "failure_mode": "safety"
     },
     {
       "id": "ASI-T06",
@@ -1263,7 +1420,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "orchestration",
+      "failure_mode": "integrity"
     },
     {
       "id": "ASI-T07",
@@ -1324,7 +1483,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "model",
+      "failure_mode": "safety"
     },
     {
       "id": "ASI-T08",
@@ -1384,7 +1545,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "observability",
+      "failure_mode": "accountability"
     },
     {
       "id": "ASI-T09",
@@ -1444,7 +1607,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "identity",
+      "failure_mode": "authenticity"
     },
     {
       "id": "ASI-T10",
@@ -1501,7 +1666,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "orchestration",
+      "failure_mode": "availability"
     },
     {
       "id": "ASI-T11",
@@ -1571,7 +1738,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "runtime",
+      "failure_mode": "integrity"
     },
     {
       "id": "ASI-T12",
@@ -1632,7 +1801,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "orchestration",
+      "failure_mode": "integrity"
     },
     {
       "id": "ASI-T13",
@@ -1691,7 +1862,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "orchestration",
+      "failure_mode": "authenticity"
     },
     {
       "id": "ASI-T14",
@@ -1749,7 +1922,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "orchestration",
+      "failure_mode": "authorization"
     },
     {
       "id": "ASI-T15",
@@ -1809,7 +1984,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "output",
+      "failure_mode": "safety"
     },
     {
       "id": "INF-01",
@@ -1868,7 +2045,9 @@
       ],
       "references": [
         "AIエージェント_ID・セキュリティ要件_4階層_雛形.xlsx"
-      ]
+      ],
+      "surface": "identity",
+      "failure_mode": "authenticity"
     },
     {
       "id": "INF-02",
@@ -1925,7 +2104,9 @@
       ],
       "references": [
         "AIエージェント_ID・セキュリティ要件_4階層_雛形.xlsx"
-      ]
+      ],
+      "surface": "identity",
+      "failure_mode": "confidentiality"
     },
     {
       "id": "INF-03",
@@ -1987,7 +2168,9 @@
       ],
       "references": [
         "NIST AI RMF MEASURE"
-      ]
+      ],
+      "surface": "observability",
+      "failure_mode": "accountability"
     },
     {
       "id": "INF-04",
@@ -2051,7 +2234,9 @@
       ],
       "references": [
         "OWASP LLM05/LLM06"
-      ]
+      ],
+      "surface": "runtime",
+      "failure_mode": "confidentiality"
     },
     {
       "id": "MCP-01",
@@ -2124,7 +2309,9 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "tools",
+      "failure_mode": "integrity"
     },
     {
       "id": "MCP-02",
@@ -2194,44 +2381,95 @@
       ],
       "references": [
         "https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"
-      ]
+      ],
+      "surface": "tools",
+      "failure_mode": "authorization"
     }
   ],
-  "unknown_discovery": {
-    "title": "未知脆弱性の探索手法（既知分類に依存しない検査）",
-    "rationale": "既知シグネチャだけでは新規・組み合わせ・コンテキスト依存の脆弱性を見逃す。挙動ベースの差分・変異・回帰探索で『仕様から逸脱する応答』を異常として検出し、人手トリアージに回す。",
-    "methods": [
+  "methodology": {
+    "note": "各テストは『入力生成戦略 × 判定オラクル』の組で表される。軸内は相互排他、組合せで網羅(CE)。未知脆弱性は、生成戦略で仕様の境界を押し、オラクルで仕様逸脱を判定して炙り出す。",
+    "generation_strategies": [
+      {
+        "id": "seed",
+        "name": "種コーパス",
+        "desc": "既知プローブの基準ペイロード(OWASP/ATLAS対応)。"
+      },
       {
         "id": "mutation",
-        "name": "ペイロード変異",
-        "desc": "既知プローブを符号化・言い換え・言語切替・トークン挿入・連結で系統的に変異させ、ガードレールの境界を探る。種(seed)→変異→評価のループ。"
+        "name": "変異",
+        "desc": "符号化・言い換え・言語切替・分割・注入ラッパで種を系統変換。"
       },
       {
-        "id": "recursive-deepening",
-        "name": "回帰的深掘り",
-        "desc": "弱い兆候を検出したプローブを起点に、成功要因を強める方向へ自動的に追加変異・追撃を生成（成功シグナルでビーム探索的に分岐）。"
+        "id": "grammar",
+        "name": "文法/テンプレート",
+        "desc": "テンプレートや文法から構造的にペイロードを生成（拡張点）。"
       },
       {
-        "id": "behavioral-invariants",
-        "name": "挙動不変条件の検査",
-        "desc": "『システムプロンプトを開示しない』『拒否ポリシーを維持する』『権限境界を越えない』等を不変条件として定義し、応答が違反したら未知でも異常として記録。"
+        "id": "search",
+        "name": "探索(回帰的深掘り)",
+        "desc": "弱兆候を起点に成功要因を強める方向へビーム探索的に追撃。"
+      },
+      {
+        "id": "stateful",
+        "name": "多ターン/状態",
+        "desc": "会話・記憶をまたぐ多段で永続化・累積効果を誘発。"
+      }
+    ],
+    "oracles": [
+      {
+        "id": "signature",
+        "name": "シグネチャ一致",
+        "desc": "内容パターン照合（秘密/カナリア/反射/追従語）。",
+        "detectors": [
+          "compliance",
+          "secret_pattern",
+          "canary_leak",
+          "system_prompt_echo",
+          "injection_echo",
+          "regex"
+        ]
+      },
+      {
+        "id": "invariant",
+        "name": "不変条件(ポリシー)違反",
+        "desc": "『拒否を維持』『境界を越えない』等の不変条件の違反。",
+        "detectors": [
+          "refusal_absent"
+        ]
       },
       {
         "id": "differential",
-        "name": "差分/メタモルフィック検査",
-        "desc": "同義だが安全/危険に変形した入力ペアの応答差を比較。安全版と危険版で挙動が割れる箇所を脆弱点候補とする。"
+        "name": "差分/メタモルフィック",
+        "desc": "安全/危険に変形した同義入力ペアの応答差で脆弱点を特定（拡張点）。",
+        "detectors": [
+          "differential"
+        ]
       },
       {
-        "id": "anomaly-detection",
-        "name": "応答異常検知",
-        "desc": "応答長・拒否率・エントロピー・秘密様パターン・想定外言語/形式の急変を統計的に検知し、シグネチャ未登録でもフラグ。"
+        "id": "anomaly",
+        "name": "統計的異常",
+        "desc": "平常値からの逸脱（長さ・拒否率・文字種・エントロピー）。",
+        "detectors": [
+          "anomaly"
+        ]
       },
       {
-        "id": "tool-trace-analysis",
-        "name": "ツール痕跡分析",
-        "desc": "応答や副作用に現れるツール呼び出し兆候（URL/コマンド/SQL/ファイルパス）を抽出し、要求と不整合な操作を検出。"
+        "id": "side_effect",
+        "name": "副作用/ツール痕跡",
+        "desc": "ツール呼び出し・外部到達など観測可能な副作用。",
+        "detectors": [
+          "tool_abuse",
+          "url_exfil"
+        ]
+      },
+      {
+        "id": "judge",
+        "name": "人手/LLM判定",
+        "desc": "自動判定が困難な意味的逸脱を人手またはLLMで判定（拡張点・受動プローブ）。",
+        "detectors": []
       }
     ],
+    "rationale": "既知シグネチャだけでは新規・組み合わせ・コンテキスト依存の脆弱性を見逃す。挙動ベースの差分・変異・回帰探索で『仕様から逸脱する応答』を異常として検出し、人手トリアージに回す。",
     "triage": "異常検出は確証ではない。各フラグに再現手順・入出力・該当する可能性のあるカタログIDを付与し、重大度推定とともにレポート化して人手トリアージ・登録（既知化）へ回す。回帰スイートに取り込むことで継続的に再検査する。"
   }
 }

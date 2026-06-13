@@ -47,6 +47,47 @@ def cmd_list_vulns(args) -> int:
     return 0
 
 
+def cmd_ingest(args) -> int:
+    from .intake import ingest, DEFAULT_INTAKE_DIR
+    intake_dir = args.intake_dir or DEFAULT_INTAKE_DIR
+    pending, msgs = ingest(intake_dir, write=args.write, catalog_path=args.catalog)
+    for m in msgs:
+        print(m)
+    if args.write:
+        return 0
+    # --check: 未反映があれば非ゼロ（CI回帰ゲート）
+    return 1 if pending else 0
+
+
+def cmd_collect(args) -> int:
+    import json as _json
+    from .collectors import run_collectors
+    cfg = {}
+    if args.collectors:
+        with open(args.collectors, "r", encoding="utf-8") as fh:
+            cfg = _json.load(fh)
+    written = run_collectors(cfg, args.intake_dir) if cfg.get("feeds") else []
+    if not cfg.get("feeds"):
+        print("コレクタ設定にフィードがありません（既定: 外部収集なし）。"
+              "--collectors でフィードを指定するか、threat_intake/ に手動投入してください。")
+        return 0
+    print(f"収集して threat_intake/ に書き出し: {len(written)} 件")
+    for w in written:
+        print(f"  - {w}")
+    return 0
+
+
+def cmd_list_oracles(args) -> int:
+    from .detectors import ORACLE_CLASSES, ORACLE_OF
+    by_class = {}
+    for det, oc in ORACLE_OF.items():
+        by_class.setdefault(oc, []).append(det)
+    for oc in ORACLE_CLASSES:
+        dets = ", ".join(by_class.get(oc["id"], [])) or "（拡張点）"
+        print(f"{oc['id']:12s} {oc['name']:16s} : {dets}")
+    return 0
+
+
 def cmd_scan(args) -> int:
     cfg = load_config(args.config)
 
@@ -139,6 +180,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     lv = sub.add_parser("list-vulns", help="カタログの脆弱性一覧")
     lv.set_defaults(func=cmd_list_vulns)
+
+    lo = sub.add_parser("list-oracles", help="判定オラクルクラスと検出器の対応（MECE）")
+    lo.set_defaults(func=cmd_list_oracles)
+
+    ig = sub.add_parser("ingest", help="threat_intake の脅威を検査(プローブ)へ反映")
+    ig.add_argument("--intake-dir", help="インテイク・ディレクトリ（既定: tools/aiva/threat_intake）")
+    ig.add_argument("--catalog", help="脆弱性カタログJSON")
+    ig.add_argument("--write", action="store_true", help="実際に反映する（既定はcheckのみ・未反映で非ゼロ終了）")
+    ig.add_argument("--check", action="store_true", help="検証のみ（既定動作。未反映があれば非ゼロ終了）")
+    ig.set_defaults(func=cmd_ingest)
+
+    co = sub.add_parser("collect", help="コレクタで新たな脅威を収集し threat_intake へ投入")
+    co.add_argument("--collectors", help="コレクタ設定JSON（feeds[].url）")
+    co.add_argument("--intake-dir", help="インテイク・ディレクトリ")
+    co.set_defaults(func=cmd_collect)
     return p
 
 
