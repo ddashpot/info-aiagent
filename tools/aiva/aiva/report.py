@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from .catalog import Catalog
+from .detectors import oracle_of
 from .engine import Finding, ScanResult
 
 _STATUS_LABEL = {
@@ -34,8 +35,14 @@ def _sorted_findings(findings: List[Finding]) -> List[Finding]:
 
 def build_report_model(result: ScanResult, catalog: Catalog, cfg: Dict[str, Any]) -> Dict[str, Any]:
     findings = _sorted_findings(result.findings)
+    oracle_counts: Dict[str, int] = {}
     items = []
     for f in findings:
+        for s in f.matched_signals:
+            oc = oracle_of(s.get("detector", ""))
+            s["oracle"] = oc
+            if f.status in ("vulnerable", "weak", "anomaly"):
+                oracle_counts[oc] = oracle_counts.get(oc, 0) + 1
         items.append({
             "probe_id": f.probe_id,
             "vuln_id": f.vuln,
@@ -67,6 +74,7 @@ def build_report_model(result: ScanResult, catalog: Catalog, cfg: Dict[str, Any]
             "catalog_version": catalog.meta.get("version"),
         },
         "summary": result.summary(),
+        "oracle_counts": oracle_counts,
         "findings": items,
     }
 

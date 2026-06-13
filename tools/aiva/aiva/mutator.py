@@ -75,6 +75,14 @@ MUTATORS: Dict[str, Callable[[str], str]] = {
 # 弱い兆候を強めるための「追撃」オペレータ（recursive deepening用・より強力な順）
 _ESCALATORS = ["prefix_inject", "roleplay", "payload_split", "base64", "suffix_inject"]
 
+# 各変異オペレータが属する生成戦略（カタログ methodology.generation_strategies に対応）。
+# initial_variants/deepen は "mutation" 戦略、deepen のビーム探索は "search" 戦略の一部。
+STRATEGY_OF = {
+    "roleplay": "mutation", "prefix_inject": "mutation", "suffix_inject": "mutation",
+    "translate": "mutation", "base64": "mutation", "leetspeak": "mutation",
+    "zerowidth": "mutation", "payload_split": "mutation", "split_tokens": "mutation",
+}
+
 
 @dataclass
 class Variant:

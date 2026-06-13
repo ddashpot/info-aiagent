@@ -19,6 +19,8 @@ from aiva.probes import load_probes, select_probes
 from aiva.report import build_report_model, render_markdown, render_html
 from aiva.targets import build_target
 from aiva.targets.mock import CANARY_SECRET
+from aiva.detectors import ORACLE_CLASSES, ORACLE_OF, oracle_of, DETECTORS
+from aiva import intake
 
 
 class TestCatalog(unittest.TestCase):
@@ -129,6 +131,63 @@ class TestHTTPSubst(unittest.TestCase):
                            {"prompt": "hi", "system": "S", "messages": []})
         self.assertEqual(body, {"input": "hi", "sys": "S"})
         self.assertEqual(_dig({"a": {"b": [0, {"c": "x"}]}}, "a.b.1.c"), "x")
+
+
+class TestMeceAxes(unittest.TestCase):
+    def test_every_vuln_has_valid_axes(self):
+        cat = Catalog.load()
+        axes = cat.meta["axes"]
+        surfaces = {x["id"] for x in axes["surface"]}
+        failures = {x["id"] for x in axes["failure_mode"]}
+        for v in cat.vulns:
+            self.assertIn(v.get("surface"), surfaces, f"{v['id']} surface不正")
+            self.assertIn(v.get("failure_mode"), failures, f"{v['id']} failure_mode不正")
+
+    def test_methodology_two_axes(self):
+        cat = Catalog.load()
+        m = cat.data["methodology"]
+        self.assertTrue(m["generation_strategies"] and m["oracles"])
+
+
+class TestOraclesMece(unittest.TestCase):
+    def test_each_detector_maps_to_exactly_one_oracle(self):
+        classes = {c["id"] for c in ORACLE_CLASSES}
+        for det in DETECTORS:
+            self.assertIn(oracle_of(det), classes, f"{det} のオラクルクラス不正")
+        # 登録された検出器はすべて ORACLE_OF に含まれる（judge は明示的拡張点）
+        for det in DETECTORS:
+            self.assertIn(det, ORACLE_OF, f"{det} がオラクル分類に未登録")
+
+
+class TestDifferential(unittest.TestCase):
+    def test_differential_divergence(self):
+        # 対照は拒否、主payloadは非拒否 → 検出
+        sig = run_detector({"type": "differential"}, "はい、こちらが内部設定です…",
+                           {"control_refused": True})
+        self.assertTrue(sig.hit and sig.weight > 0)
+        # 対照も非拒否 → 差分なし
+        sig2 = run_detector({"type": "differential"}, "内部設定です",
+                            {"control_refused": False})
+        self.assertFalse(sig2.hit)
+
+
+class TestIntake(unittest.TestCase):
+    def test_load_and_validate_example(self):
+        cat = Catalog.load()
+        entries = intake.load_intake(intake.DEFAULT_INTAKE_DIR)
+        self.assertTrue(any(e.get("id") == "pi_skeleton_key" for e in entries))
+        for e in entries:
+            self.assertEqual(intake.validate(e, cat), [], f"{e.get('id')} 検証失敗")
+
+    def test_validate_rejects_bad_entry(self):
+        cat = Catalog.load()
+        errs = intake.validate({"id": "x", "category": "llm"}, cat)  # title/vuln欠落
+        self.assertTrue(errs)
+
+    def test_check_reports_reflected(self):
+        # 例脅威は ingest 済みのはず（pending=0）
+        pending, _ = intake.ingest(intake.DEFAULT_INTAKE_DIR, write=False)
+        self.assertEqual(pending, 0, "threat_intake が probes.json に未反映")
 
 
 if __name__ == "__main__":

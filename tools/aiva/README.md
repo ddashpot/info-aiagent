@@ -56,6 +56,34 @@ python3 -m aiva scan --config examples/config.http.example.json --authorize
 | `aiva scan` | 対象を検査しレポート生成（脆弱性検出時 exit code 1 → CI連携可） |
 | `aiva list-probes` | プローブ一覧（active=能動送信 / passive=手動点検） |
 | `aiva list-vulns` | カタログの脆弱性一覧 |
+| `aiva list-oracles` | 判定オラクルクラスと検出器の対応（MECE） |
+| `aiva collect` | コレクタで新たな脅威を収集し `threat_intake/` へ投入（既定は外部接続なし） |
+| `aiva ingest` | `threat_intake/` の脅威をプローブ／カタログへ反映（`--write`）/ 反映済みか検証（既定・CIゲート） |
+
+## MECE設計（分類・手法・機能）
+
+重複するソース（OWASP/ATLAS）を一次分類にせず、**直交2軸**を背骨にしている。
+
+- **脆弱性**: `surface`（影響サーフェス・10値）× `failure_mode`（失敗モード・7値）。各脆弱性は1セルに一意。framework IDは横断タグ。
+- **検査手法**: `generation_strategies`（生成・5）×`oracles`（判定オラクル・6）。各テスト＝生成×オラクル。
+- **機能（検出器）**: 各検出器はちょうど1オラクルクラスに属す（`aiva list-oracles`）。差分(differential)・人手/LLM判定(judge)を含め網羅。
+
+## 脅威インテイク（収集 → 反映 → 回帰）
+
+新たな脅威を一過性でなく継続的にテストへ取り込むループ。
+
+```bash
+# 収集（任意・フィードを指定したときのみ外部取得。既定は安全な no-op）
+aiva collect --collectors collectors.json
+# 投入: threat_intake/*.json（1ファイル=1脅威。スキーマは threat_intake/README.md）
+# 反映: プローブ／カタログへ upsert（新規脆弱性は vuln_def で MECE軸つき同時取込）
+aiva ingest --write
+# 回帰ゲート: 投入済み脅威がテストに反映されているか検証（未反映で非ゼロ終了）
+aiva ingest --check
+```
+
+GitHub Action `.github/workflows/aiva.yml` が push/PR で `ingest --check`・テスト・mock回帰を実行し、
+週次でコレクタ収集→反映→PR起票まで自動化する。
 
 主なオプション: `--config` `--target {mock,http,openai}` `--probes`（ID/脆弱性ID/グロブ/all）
 `--categories {llm,agentic,infra,all}` `--format md,json,html` `--out DIR`

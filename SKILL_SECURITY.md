@@ -37,6 +37,14 @@
 
 2. **カタログを単一の真実の源**にする。HTMLとスキャナは必ずカタログを参照し、知見を重複定義しない。
 
+   **MECEの原則（重要）**：OWASP-LLM / OWASP-Agentic / MITRE-ATLAS は相互に重複するソースなので、
+   これらを一次分類に使うと必ず重複する。本カタログは**直交2軸を一次分類(MECE backbone)**とする。
+   - 脆弱性：`surface`（影響サーフェス・10値）×`failure_mode`（失敗モード・7値）。各脆弱性は1セルに一意対応。
+     framework ID（LLM01等）は横断タグ（参照）として保持し、捨てない。
+   - 検査手法：`generation_strategies`（入力生成・5値）×`oracles`（判定オラクル・6値）。各テスト＝生成×オラクル。
+   - 検出器（機能）：各検出器はちょうど1つのオラクルクラスに属する（`detectors/oracles.py`）。`aiva list-oracles` で対応表。
+   - 同一(surface,failure)セルに複数framework項目が乗る＝重複の明示。`meta.axes.overlaps` に記録。
+
 3. **汎用性**を保つ。
    - プローブはデータ（`probes.json`）として追加する。
    - 検出器・対象アダプタはプラグインとして追加する。
@@ -48,6 +56,16 @@
 
 5. **回帰的**に運用する。発見した未知パターンはプローブとして登録（既知化）し、回帰スイートで再検査する。
    自己評価は再評価のたびにスコア・バックログを再計算する。
+
+   **脅威インテイク・ループ（自動化）**：新たな脅威は次の流れで検査へ反映する。
+   ```
+   収集  aiva collect --collectors collectors.json   # フィード→ threat_intake/*.json（任意・既定は外部接続なし）
+   投入  threat_intake/*.json                         # 1ファイル=1脅威（手動 or コレクタ）
+   反映  aiva ingest --write                          # プローブ／カタログへ upsert
+   回帰  aiva ingest --check && unittest && aiva scan --target mock
+   ```
+   GitHub Action（`.github/workflows/aiva.yml`）が push/PR で `ingest --check`・テスト・mock回帰を
+   ゲートし、週次でコレクタ収集→反映→PR起票まで自動化する。新規脆弱性は `vuln_def`（MECE軸必須）で同時取り込み。
 
 6. **責任ある利用**。能動検査は対象所有者の許可（`authorized`/`--authorize`）を前提とする防御的用途に限る。
 
@@ -61,8 +79,10 @@
   "categories": [ { "id": "llm|agentic|infra|mcp|...", "name": "...", "framework": "...", "summary": "..." } ],
   "vulnerabilities": [
     {
-      "id": "LLM01 / ASI-T01 / INF-01 / MCP-01 ...",  // フレームワーク準拠の安定ID
-      "category": "llm",
+      "id": "LLM01 / ASI-T01 / INF-01 / MCP-01 ...",  // フレームワーク準拠の安定ID（横断タグ）
+      "category": "llm",                              // 出典（参照用・MECE一次分類ではない）
+      "surface": "input|model|memory|tools|orchestration|identity|supplychain|runtime|output|observability",
+      "failure_mode": "confidentiality|integrity|availability|authorization|authenticity|accountability|safety",
       "name": "日本語の脆弱性名",
       "aka": ["英語別称", ...],
       "severity": "critical|high|medium|low|info",

@@ -121,6 +121,7 @@ class Engine:
             "system": getattr(target, "system_prompt", "") or "",
             "canary": getattr(target, "canary", None),
         }
+        self._probe_ctx: Dict[str, Any] = {}  # プローブ単位の追加文脈（差分オラクル等）
 
     # --- helpers ---
     def _send_conversation(self, messages: List[str]) -> Any:
@@ -135,6 +136,7 @@ class Engine:
 
     def _ctx_for(self, resp) -> Dict[str, Any]:
         ctx = dict(self.ctx_base)
+        ctx.update(self._probe_ctx)
         ctx["tool_calls"] = getattr(resp, "tool_calls", []) or []
         return ctx
 
@@ -168,6 +170,14 @@ class Engine:
 
         attempts: List[Attempt] = []
         best: Optional[Attempt] = None
+
+        # 0) 差分オラクル用：対照（素の要求版）を送って基準を取る
+        self._probe_ctx = {}
+        if probe.control_variant:
+            cresp = self.target.send(probe.control_variant)
+            self.requests += 1
+            self._probe_ctx = {"control_response": cresp.text[:300],
+                               "control_refused": _refused(cresp.text)}
 
         # 1) 種ペイロード（および多ターン会話）
         for convo in probe.messages:
