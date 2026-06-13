@@ -1,0 +1,4 @@
+{"servers":[{"name":"files","tools":[
+  {"name":"read","issues":[{"type":"tool_poisoning","severity":"high","message":"hidden instruction in tool description"}]},
+  {"name":"admin","issues":[{"type":"excessive_permission","severity":"medium","message":"requested scope is too broad"}]}
+]}]}

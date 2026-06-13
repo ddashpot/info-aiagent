@@ -61,6 +61,28 @@ python3 -m aiva scan --config examples/config.http.example.json --authorize
 | `aiva ingest` | `threat_intake/` の脅威をプローブ／カタログへ反映（`--write`）/ 反映済みか検証（既定・CIゲート） |
 | `aiva tools` | 統合可能な外部セキュリティツールと導入状況 |
 | `aiva coverage` | 網羅性(カバレッジ)とギャップを算定（`--format md|json` `--only-available`） |
+| `aiva run-tool` | 外部ツールを実行/レポート取込しカタログ所見へ正規化（garak/mcp-scan） |
+
+### 外部ツールの実行・取込（garak / mcp-scan）
+
+導入済みツールを実行、または既存レポートを取り込んで aiva 所見（カタログIDにマッピング）へ正規化:
+
+```bash
+# 既存の garak レポートを取り込む（ツール未導入でも可）
+aiva run-tool garak --import garak.report.jsonl
+# mcp-scan の結果(JSON)を取り込む
+aiva run-tool mcp-scan --import mcp_scan.json
+# 導入済みなら直接実行（--tool-config で model_type/probes 等を指定）
+aiva run-tool garak --tool-config garak.json
+```
+
+### 半能動プローブ（測定オラクル）
+
+自動検査が難しかった可用性系を、送信＋測定で半能動的に検査:
+- `consume_burst`（ASI-T04 無制限消費）→ `resource_consumption` オラクル（応答長・反復・遅延を測定）
+- `hitl_flood`（ASI-T10 HITL過負荷）→ `request_flood` オラクル（承認/確認要求の件数を測定）
+
+これにより自動検査カバレッジは約7割超に。残るマルチエージェント統制系は引き続き設計統制＋人手で対応。
 
 ## 外部ツール統合と網羅性（garak / PyRIT ほかの組合せ）
 

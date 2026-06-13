@@ -92,8 +92,8 @@
 
     { "id": "mcp-scan", "name": "mcp-scan", "vendor": "Invariant Labs", "kind": "mcp",
       "homepage": "https://github.com/invariantlabs-ai/mcp-scan", "install": "pipx install mcp-scan",
-      "detect": { "type": "cmd", "value": "mcp-scan" }, "adapter": null,
-      "covers": ["MCP-01", "MCP-02"], "notes": "MCPサーバのツールポイズニング/過剰権限検査。" },
+      "detect": { "type": "cmd", "value": "mcp-scan" }, "adapter": "mcp-scan",
+      "covers": ["MCP-01", "MCP-02"], "notes": "MCPサーバのツールポイズニング/過剰権限検査。結果をMCP-01/02へ正規化。" },
     { "id": "agentic-radar", "name": "Agentic Radar", "vendor": "SplxAI", "kind": "agentic",
       "homepage": "https://github.com/splx-ai/agentic-radar", "install": "pip install agentic-radar",
       "detect": { "type": "module", "value": "agentic_radar" }, "adapter": null,

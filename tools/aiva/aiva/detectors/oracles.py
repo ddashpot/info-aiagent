@@ -36,8 +36,10 @@ ORACLE_OF: Dict[str, str] = {
     "refusal_absent": "invariant",
     "differential": "differential",
     "anomaly": "anomaly",
+    "resource_consumption": "anomaly",
     "tool_abuse": "side_effect",
     "url_exfil": "side_effect",
+    "request_flood": "signature",
 }
 
 

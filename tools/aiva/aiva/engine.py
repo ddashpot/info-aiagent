@@ -138,6 +138,7 @@ class Engine:
         ctx = dict(self.ctx_base)
         ctx.update(self._probe_ctx)
         ctx["tool_calls"] = getattr(resp, "tool_calls", []) or []
+        ctx["latency_ms"] = getattr(resp, "latency_ms", 0)
         return ctx
 
     def calibrate(self) -> None:
