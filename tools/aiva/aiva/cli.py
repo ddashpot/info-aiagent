@@ -249,7 +249,14 @@ def cmd_scan(args) -> int:
         for w in written:
             print(f"  - {w}")
 
-    # 脆弱性が見つかればexit code 1（CI連携用）
+    # 終了コード（CI/テストゲート）。--fail-on 指定時はその深刻度のみで判定。
+    fail_st = {"vulnerable", "weak", "anomaly"}
+    if args.fail_on:
+        sevs = {x.strip() for x in args.fail_on.split(",")}
+        hits = [f for f in model["findings"] if f["status"] in fail_st and f["severity"] in sevs]
+        if hits:
+            print(f"\n✗ fail-on={','.join(sorted(sevs))}: {len(hits)} 件が基準超過 → 失敗扱い")
+        return 1 if hits else 0
     return 1 if (s.get("vulnerable", 0) or s.get("weak", 0) or s.get("anomaly", 0)) else 0
 
 
@@ -265,7 +272,8 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--target", choices=["mock", "http", "openai"], help="target.type を上書き")
     sc.add_argument("--probes", help="カンマ区切り（プローブID/脆弱性ID/グロブ/all）")
     sc.add_argument("--categories", help="カンマ区切り（llm,agentic,infra,all）")
-    sc.add_argument("--format", help="md,json,html,sarif のカンマ区切り")
+    sc.add_argument("--format", help="md,json,html,sarif,junit のカンマ区切り")
+    sc.add_argument("--fail-on", help="この深刻度の所見があれば失敗(exit 1)。例: critical,high")
     sc.add_argument("--out", help="レポート出力先ディレクトリ")
     sc.add_argument("--with-tools", help="統合実行する外部ツールID（例: garak,mcp-scan・導入済みのみ）")
     sc.add_argument("--tool-import", help="外部ツールのレポート取込（例: garak=report.jsonl,mcp-scan=res.json）")

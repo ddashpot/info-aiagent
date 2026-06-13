@@ -362,5 +362,41 @@ class TestSarifAndOrchestration(unittest.TestCase):
         self.assertEqual(len(model["external"]), 1)
 
 
+class TestTestingHelper(unittest.TestCase):
+    def test_scan_and_findings(self):
+        from aiva import testing
+        res = testing.scan({"target": {"type": "mock"}}, categories=["llm"],
+                           mutation={"enabled": False})
+        vuln = testing.findings(res, status=("vulnerable", "weak"))
+        self.assertTrue(vuln, "mockで脆弱所見が出るはず")
+
+    def test_assert_secure_raises_on_mock(self):
+        from aiva import testing
+        res = testing.scan({"target": {"type": "mock"}}, categories=["llm"],
+                           mutation={"enabled": False})
+        with self.assertRaises(AssertionError):
+            testing.assert_secure(res, fail_on=("critical", "high"))
+
+    def test_authorized_required_for_nonmock(self):
+        from aiva import testing
+        with self.assertRaises(PermissionError):
+            testing.scan({"target": {"type": "http", "url": "http://x"}})
+
+
+class TestJUnit(unittest.TestCase):
+    def test_render_junit_wellformed(self):
+        import xml.dom.minidom as minidom
+        from aiva.report import build_report_model, render_junit
+        cat = Catalog.load()
+        target = build_target({"type": "mock"})
+        probes = select_probes(load_probes(), selectors=["LLM01"], categories=["all"])
+        res = Engine(target, cat, load_config(None)["scan"]).run(probes)
+        xml = render_junit(build_report_model(res, cat, load_config(None)["report"]))
+        # 妥当なXMLとしてパースできる
+        dom = minidom.parseString(xml)
+        self.assertEqual(dom.documentElement.tagName, "testsuites")
+        self.assertIn("<testcase", xml)
+
+
 if __name__ == "__main__":
     unittest.main()

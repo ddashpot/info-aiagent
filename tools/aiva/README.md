@@ -166,7 +166,45 @@ aiva scan --target http --config conf.json --authorize \
 
 CIワークフローは mock 検査の SARIF を生成（artifact）。`workflow_dispatch` 実行時のみ Security タブへ反映。
 
-### マルチモーダル攻撃面
+## テストツールとして使う（CI / pytest）
+
+セキュリティテストとして既存のテスト・CIへ組み込めます。
+
+**① テストスイートに組み込む（pytest / unittest）** — `examples/test_security_example.py` を参照:
+
+```python
+from aiva import testing
+
+def test_agent_is_secure():
+    result = testing.scan({
+        "target": {"type": "openai", "url": "...", "model": "...",
+                   "api_key_env": "OPENAI_API_KEY", "system": "..."},
+        "authorized": True,
+    }, categories=["llm", "agentic"])
+    testing.assert_secure(result, fail_on=("critical", "high"))  # 該当所見でテスト失敗
+```
+
+**② CLIゲート（exit code）** — 重大度しきい値でビルドを失敗させる:
+
+```bash
+aiva scan --config conf.json --authorize --fail-on critical,high --format junit,sarif
+#   --fail-on の深刻度に該当する所見があれば exit 1。JUnit/SARIF をCIに取り込み。
+```
+
+**③ 出力形式** — `--format junit`（JUnit XML：各プローブ＝テストケース）/ `sarif`（Code Scanning）/ `json` / `md` / `html`。
+
+**④ 再利用可能な GitHub Action** — `tools/aiva/action.yml`:
+
+```yaml
+- uses: ddashpot/info-aiagent/tools/aiva@main
+  with:
+    config: aiva.config.json
+    authorize: "true"
+    fail-on: "critical,high"
+    formats: "json,sarif,junit"
+```
+
+## マルチモーダル攻撃面
 
 カタログに `multimodal` カテゴリ（MM-01 画像 / MM-02 音声・トランスクリプト / MM-03 生成メディア漏えい）を追加。
 スキャナはテキスト代理プローブ（OCR/文字起こし結果に埋め込んだ指示）で間接インジェクション処理を能動検査する。

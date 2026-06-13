@@ -1,0 +1,63 @@
+name: "aiva AI security scan"
+description: "AI/エージェンティックAIアプリを aiva で能動検査し、SARIF/JUnitを出力する再利用可能Action"
+author: "info-aiagent"
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  config:
+    description: "スキャン設定JSONのパス（target/scan/authorized 等）"
+    required: false
+    default: ""
+  target:
+    description: "target.type を上書き（mock|http|openai）"
+    required: false
+    default: "mock"
+  probes:
+    description: "対象プローブ（ID/脆弱性ID/グロブ/all のカンマ区切り）"
+    required: false
+    default: "all"
+  categories:
+    description: "対象カテゴリ（llm,agentic,infra,mcp,multimodal,all）"
+    required: false
+    default: "all"
+  formats:
+    description: "出力形式（md,json,html,sarif,junit）"
+    required: false
+    default: "json,sarif,junit"
+  fail-on:
+    description: "この深刻度の所見があればジョブを失敗させる（例: critical,high）。空なら任意の所見で失敗。"
+    required: false
+    default: ""
+  authorize:
+    description: "対象の検査許可を明示（mock以外で必須）。'true' で付与。"
+    required: false
+    default: "false"
+  out:
+    description: "レポート出力ディレクトリ"
+    required: false
+    default: "aiva_report"
+
+outputs:
+  report-dir:
+    description: "生成されたレポートのディレクトリ"
+    value: ${{ inputs.out }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Install aiva
+      shell: bash
+      run: pip install -e "${{ github.action_path }}"
+    - name: Run aiva scan
+      shell: bash
+      run: |
+        ARGS="--target ${{ inputs.target }} --probes ${{ inputs.probes }} --categories ${{ inputs.categories }} --format ${{ inputs.formats }} --out ${{ inputs.out }}"
+        [ -n "${{ inputs.config }}" ] && ARGS="$ARGS --config ${{ inputs.config }}"
+        [ -n "${{ inputs.fail-on }}" ] && ARGS="$ARGS --fail-on ${{ inputs.fail-on }}"
+        [ "${{ inputs.authorize }}" = "true" ] && ARGS="$ARGS --authorize"
+        aiva scan $ARGS
