@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI / エージェンティックAI 脆弱性 自己評価ツール</title>
+<meta name="description" content="OWASP LLM Top10 / OWASP Agentic Threats / MITRE ATLAS / NIST AI RMF に準拠した、AI・エージェンティックAIの脆弱性カタログと自己評価・レッドチーム計画ツール。単一HTMLで動作。">
+<style>
+:root{
+  --bg1:#0e1320; --bg2:#131c30; --panel:#161f33; --card:#1a2440; --line:#2a3754;
+  --fg:#e9eefc; --mut:#93a6cc; --acc:#6ea8ff; --acc2:#9b7dff;
+  --crit:#ff5d73; --high:#ffa14d; --med:#ffd24d; --low:#62d39b; --info:#7fb0ff;
+  --done:#3ec97a; --partial:#ffc14d; --none:#ff6b81; --na:#6b7a99;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(180deg,var(--bg1),var(--bg2));color:var(--fg);
+  font-family:system-ui,-apple-system,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;line-height:1.65;min-height:100vh}
+a{color:var(--acc)}
+header{padding:18px 20px 0;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+  background:rgba(14,19,32,.92);backdrop-filter:blur(8px)}
+header h1{margin:0;font-size:18px;letter-spacing:.02em}
+header p.sub{margin:4px 0 10px;color:var(--mut);font-size:12.5px}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
+nav.tabs button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--mut);
+  padding:9px 14px;font-size:14px;cursor:pointer;border-radius:6px 6px 0 0}
+nav.tabs button.active{color:var(--fg);border-bottom-color:var(--acc);background:rgba(110,168,255,.08)}
+.wrap{display:grid;grid-template-columns:268px 1fr;gap:16px;max-width:1200px;margin:0 auto;padding:16px 18px 60px}
+aside.panel{position:sticky;top:96px;align-self:start;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:14px;max-height:calc(100vh - 120px);overflow:auto}
+aside.panel.hidden{display:none}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px}
+.field select,.field input{width:100%;background:#0e1626;color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;padding:8px 9px;font-size:13px}
+.btn{background:var(--acc);color:#04122e;border:0;border-radius:8px;padding:8px 12px;font-size:13px;
+  font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line);font-weight:500}
+.btn.sm{padding:5px 9px;font-size:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+main{min-width:0}
+.view{display:none}
+.view.active{display:block}
+.muted{color:var(--mut)}
+.small{font-size:12px}
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--line);
+  border-radius:12px;margin:12px 0;overflow:hidden}
+.card>.head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;cursor:pointer}
+.card>.head:hover{background:rgba(255,255,255,.02)}
+.card.sev-critical{border-left-color:var(--crit)} .card.sev-high{border-left-color:var(--high)}
+.card.sev-medium{border-left-color:var(--med)} .card.sev-low{border-left-color:var(--low)}
+.vid{font-family:ui-monospace,monospace;background:#0d1626;padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
+.vname{font-weight:700;font-size:14.5px}
+.tag{font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.sev{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700}
+.sev.critical{background:rgba(255,93,115,.16);color:var(--crit)} .sev.high{background:rgba(255,161,77,.16);color:var(--high)}
+.sev.medium{background:rgba(255,210,77,.16);color:var(--med)} .sev.low{background:rgba(98,211,155,.16);color:var(--low)}
+.cov{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut)}
+.bar{width:84px;height:8px;border-radius:999px;background:#0d1626;overflow:hidden;border:1px solid var(--line)}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--crit),var(--med),var(--done))}
+.card>.body{display:none;padding:0 14px 14px;border-top:1px solid var(--line)}
+.card.open>.body{display:block}
+.sec{margin-top:12px}
+.sec h4{margin:0 0 6px;font-size:12.5px;color:var(--mut);font-weight:700;letter-spacing:.03em}
+.chips span{display:inline-block;font-size:11.5px;background:#0e1728;border:1px solid var(--line);color:var(--mut);
+  border-radius:6px;padding:2px 7px;margin:2px}
+ul.clean{list-style:none;margin:4px 0;padding:0}
+ul.clean li{padding:3px 0 3px 16px;position:relative;font-size:13px}
+ul.clean li:before{content:"▹";position:absolute;left:0;color:var(--acc)}
+/* control checklist */
+.ctrl{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:start;padding:9px 10px;border:1px solid var(--line);
+  border-radius:9px;margin:6px 0;background:#101a2c}
+.ctrl .cmeta{font-size:12.5px}
+.ctrl .ctype{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--acc2);margin-right:6px}
+.ctrl .cfound{color:var(--mut);font-size:11.5px;margin-top:2px}
+.ctrl select{background:#0e1626;color:var(--fg);border:1px solid var(--line);border-radius:7px;padding:6px;font-size:12px;min-width:118px}
+.ctrl select[data-st="done"]{border-color:var(--done)} .ctrl select[data-st="partial"]{border-color:var(--partial)}
+.ctrl select[data-st="none"]{border-color:var(--none)} .ctrl select[data-st="na"]{border-color:var(--na)}
+/* dashboard */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.kpi .big{font-size:30px;font-weight:800}
+.kpi .lbl{color:var(--mut);font-size:12px}
+.gauge{height:10px;border-radius:999px;background:#0d1626;border:1px solid var(--line);overflow:hidden;margin-top:8px}
+.gauge>i{display:block;height:100%}
+.backlog{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 14px;margin-top:14px}
+.bl-item{display:flex;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.bl-item:last-child{border-bottom:0}
+.bl-rank{width:24px;height:24px;border-radius:7px;background:#0e1728;display:grid;place-items:center;font-size:12px;color:var(--mut);flex:0 0 auto}
+.bl-item .g{margin-left:auto;color:var(--mut);font-size:12px;text-align:right}
+pre.out{background:#0a1120;border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;
+  font-size:12px;white-space:pre-wrap;word-break:break-word;max-height:46vh}
+.notice{background:rgba(155,125,255,.08);border:1px solid var(--line);border-left:3px solid var(--acc2);
+  border-radius:8px;padding:10px 12px;font-size:12.5px;color:var(--mut);margin:8px 0}
+.legend{font-size:11.5px;color:var(--mut)}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#11203a;border:1px solid var(--line);
+  color:var(--fg);padding:9px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .25s;z-index:50}
+.toast.show{opacity:1}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}aside.panel{position:static;max-height:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🛡 AI / エージェンティックAI 脆弱性 自己評価ツール</h1>
+  <p class="sub">OWASP LLM Top10 2025 ・ OWASP Agentic Threats(T1–T15) ・ MITRE ATLAS ・ NIST AI RMF / ISO 42001 準拠。脆弱性カタログ／実装コントロールの自己評価／レッドチーム検査計画。単一HTMLで動作（回答はブラウザに保存）。</p>
+  <nav class="tabs" id="tabs">
+    <button data-tab="dashboard" class="active">評価ダッシュボード</button>
+    <button data-tab="assess">脆弱性カタログ＆自己評価</button>
+    <button data-tab="redteam">レッドチーム検査計画</button>
+  </nav>
+</header>
+
+<div class="wrap">
+  <aside class="panel" id="panel">
+    <div class="field"><label>大分類</label>
+      <select id="f-cat"><option value="all">すべて</option></select></div>
+    <div class="field"><label>深刻度</label>
+      <select id="f-sev"><option value="all">すべて</option>
+        <option value="critical">致命的</option><option value="high">高</option>
+        <option value="medium">中</option><option value="low">低</option></select></div>
+    <div class="field"><label>評価状態</label>
+      <select id="f-state"><option value="all">すべて</option>
+        <option value="gap">未対応/部分のみ（ギャップ）</option>
+        <option value="unassessed">未評価</option>
+        <option value="covered">対応済み</option></select></div>
+    <div class="field"><label>キーワード検索</label>
+      <input id="f-kw" type="text" placeholder="例: プロンプト, ツール, RAG, ATLAS"></div>
+    <div class="row">
+      <button class="btn ghost sm" id="btn-expand">すべて展開</button>
+      <button class="btn ghost sm" id="btn-collapse">折りたたむ</button>
+    </div>
+    <div class="field" style="margin-top:12px">
+      <button class="btn ghost sm" id="btn-reset" style="width:100%">回答をリセット</button>
+    </div>
+    <p class="legend" style="margin-top:10px">状態の重み: 実装済=1.0 / 部分=0.5 / 未実装=0 / 対象外=除外。残存リスク = 深刻度 ×（1 − 実装カバレッジ）。</p>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="grid">
+        <div class="kpi"><div class="lbl">総合セキュリティ態勢</div>
+          <div class="big" id="kpi-posture">–</div>
+          <div class="gauge"><i id="kpi-posture-bar"></i></div>
+          <div class="small muted" id="kpi-posture-note"></div></div>
+        <div class="kpi"><div class="lbl">評価済み / 全脆弱性</div>
+          <div class="big" id="kpi-assessed">–</div>
+          <div class="small muted">コントロール状態を1つ以上設定した項目</div></div>
+        <div class="kpi"><div class="lbl">重大ギャップ（高/致命的×未対応）</div>
+          <div class="big" id="kpi-gaps" style="color:var(--crit)">–</div>
+          <div class="small muted">最優先の是正対象</div></div>
+        <div class="kpi"><div class="lbl">実装コントロール カバレッジ</div>
+          <div class="big" id="kpi-cov">–</div>
+          <div class="gauge"><i id="kpi-cov-bar"></i></div>
+          <div class="small muted">対象外を除く全コントロール平均</div></div>
+      </div>
+
+      <div class="backlog">
+        <div class="row" style="justify-content:space-between">
+          <h3 style="margin:8px 0;font-size:14px">是正バックログ（残存リスク順・回帰的に上位から対応）</h3>
+          <div class="row">
+            <button class="btn ghost sm" id="btn-export-md">評価レポートをコピー(MD)</button>
+            <button class="btn ghost sm" id="btn-export-json">評価状態をJSON保存</button>
+          </div>
+        </div>
+        <div class="notice">「回帰的な深掘り」：上位の是正項目に対応（状態を更新）すると、本バックログとスコアが自動で再計算され、次に取り組むべき項目が繰り上がります。一過性ではなく、再評価を繰り返して残存リスクを下げていくための設計です。</div>
+        <div id="backlog-list"></div>
+      </div>
+
+      <div class="backlog">
+        <h3 style="margin:8px 0;font-size:14px">大分類別カバレッジ</h3>
+        <div id="cat-coverage"></div>
+      </div>
+    </section>
+
+    <!-- ASSESS / CATALOG -->
+    <section class="view" id="view-assess">
+      <div class="row" style="justify-content:space-between;margin-bottom:6px">
+        <div class="muted small" id="assess-count"></div>
+        <div class="legend">各コントロールの実装状態を選択 → 右上のカバレッジとダッシュボードが即時更新</div>
+      </div>
+      <div id="cards"></div>
+    </section>
+
+    <!-- REDTEAM -->
+    <section class="view" id="view-redteam">
+      <div class="notice">選択範囲の脆弱性に対応する<strong>能動検査プローブ</strong>を集約し、汎用スキャナ <code>tools/aiva</code> 用の設定（<code>aiva-plan.config.json</code>）と、人手レッドチーム用のテスト計画（Markdown）を生成します。<br>
+      実行例: <code>python3 -m aiva scan --config aiva-plan.config.json --authorize</code>（検査対象を所有/許可している場合のみ）。</div>
+      <div class="field" style="max-width:420px">
+        <label>計画の対象範囲</label>
+        <select id="rt-scope">
+          <option value="gaps">ギャップのみ（未対応/部分/未評価）</option>
+          <option value="all">すべての脆弱性</option>
+          <option value="critical_high">致命的・高のみ</option>
+        </select>
+      </div>
+      <div class="row" style="margin:8px 0 12px">
+        <button class="btn" id="rt-gen">計画を生成</button>
+        <button class="btn ghost" id="rt-copy-config">aiva設定をコピー</button>
+        <button class="btn ghost" id="rt-copy-md">テスト計画(MD)をコピー</button>
+      </div>
+      <h4 class="muted small">aiva スキャナ設定（BYO-endpoint。target を自社アプリに変更して使用）</h4>
+      <pre class="out" id="rt-config"></pre>
+      <h4 class="muted small">レッドチーム テスト計画</h4>
+      <pre class="out" id="rt-md"></pre>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script id="catalog-data" type="application/json">{"meta":{"name":"AI / エージェンティックAI 脆弱性・コントロールカタログ","slug":"ai-security-catalog","version":"1.0.0","updated":"2026-06-13","language":"ja","description":"AI（LLM）アプリおよびエージェンティックAIの脆弱性を体系化し、各脆弱性に対するコントロール（対策）と実装基盤、検査プローブ、準拠フレームワークへのマッピングを提供する共有ナレッジベース。HTML自己評価ツール（ai_security_assessment.html）と汎用スキャナ（tools/aiva）の双方が参照する。","frameworks":[{"id":"owasp-llm","name":"OWASP Top 10 for LLM Applications 2025","ref":"https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/"},{"id":"owasp-agentic","name":"OWASP Agentic AI – Threats and Mitigations","ref":"https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"},{"id":"atlas","name":"MITRE ATLAS v5.1.0","ref":"https://atlas.mitre.org/"},{"id":"nist-airmf","name":"NIST AI RMF 1.0 (GOVERN/MAP/MEASURE/MANAGE)","ref":"https://www.nist.gov/itl/ai-risk-management-framework"},{"id":"iso-42001","name":"ISO/IEC 42001:2023 (AIMS)","ref":"https://www.iso.org/standard/81230.html"}],"agent_patterns_ref":"SKILL.md（シーケンシャル系/スーパーバイザー系/スウォーム系の実装バリエーション）"},"severity_scale":[{"id":"critical","label":"致命的","weight":5},{"id":"high","label":"高","weight":4},{"id":"medium","label":"中","weight":3},{"id":"low","label":"低","weight":2},{"id":"info","label":"情報","weight":1}],"control_types":[{"id":"preventive","label":"予防 (Preventive)"},{"id":"detective","label":"検知 (Detective)"},{"id":"responsive","label":"対応 (Responsive)"},{"id":"governance","label":"統制 (Governance)"}],"categories":[{"id":"llm","name":"LLMアプリ脆弱性","framework":"owasp-llm","summary":"プロンプト・出力・データ・モデルサプライチェーンなど、LLMを組み込んだアプリ層の主要リスク。"},{"id":"agentic","name":"エージェンティックAI脅威","framework":"owasp-agentic","summary":"自律的にツールを使い、記憶・計画・多エージェント協調を行うことで生じるエージェント特有の脅威。"},{"id":"infra","name":"基盤・ID・サプライチェーン","framework":"iso-42001","summary":"エージェントのアイデンティティ、権限、秘密情報、サンドボックス、可観測性など実装基盤レベルの統制。"}],"vulnerabilities":[{"id":"LLM01","category":"llm","name":"プロンプトインジェクション","aka":["Prompt Injection","Direct/Indirect Injection","Jailbreak"],"severity":"critical","summary":"ユーザー入力や外部データに埋め込まれた指示が、システムの意図した制約を上書きする。","description":"信頼できない入力（直接：ユーザー、間接：取得文書・Web・メール・ツール出力）に含まれる指示をモデルが正規の命令として実行し、ガードレール回避・権限外操作・情報漏えいを引き起こす。RAGやエージェントのツール出力経由の間接インジェクションは検出が難しい。","attack_vectors":["直接：会話中での『これまでの指示を無視して…』系の上書き","間接：取得文書/Webページ/メール本文/コミット/画像のalt等に隠した命令","多段：ツール出力→次エージェントの入力として伝播（カスケード）","符号化/難読化：Base64・Unicode・言語切替・ロールプレイによる回避"],"affected_patterns":["router-supervisor","handoff-swarm","blackboard","planner-executor","pipeline","event-driven-swarm"],"controls":[{"id":"c-input-segmentation","type":"preventive","name":"信頼境界の分離","desc":"システム指示とユーザー/外部データを構造的に分離し、外部データを命令として解釈させない（spotlighting/デリミタ/データタグ）。","foundation":"プロンプトテンプレート設計、構造化メッセージAPI"},{"id":"c-input-guard","type":"preventive","name":"入力ガードレール","desc":"既知のインジェクション語句・難読化・命令上書きパターンを検出/無害化。","foundation":"Llama Guard / NeMo Guardrails / Prompt Shields / 正規表現+分類器"},{"id":"c-output-guard","type":"detective","name":"出力ガードレール","desc":"応答が方針逸脱・機密露出・危険操作要求を含まないか検査。","foundation":"出力分類器、ポリシーエンジン"},{"id":"c-least-priv-tools","type":"preventive","name":"ツール最小権限","desc":"インジェクション成功時の被害を限定するため、エージェントの権限・到達範囲を最小化。","foundation":"スコープ付きトークン、ツール許可リスト"},{"id":"c-hitl-highrisk","type":"responsive","name":"高リスク操作の人手承認","desc":"送信・決済・削除・権限変更など不可逆操作はHuman-in-the-loop。","foundation":"承認ワークフロー、監査ログ"}],"foundations":["構造化プロンプト/spotlighting","ガードレール基盤(Llama Guard/NeMo)","ツール最小権限","HITL承認"],"atlas":["AML.T0051 LLM Prompt Injection","AML.T0051.000 Direct","AML.T0051.001 Indirect","AML.T0054 LLM Jailbreak"],"nist_rmf":["MEASURE 2.7","MANAGE 2.2","MANAGE 4.1"],"probes":["pi_direct_override","pi_roleplay","pi_obfuscation","pi_indirect_doc","pi_ignore_previous"],"signals":["system指示の開示","拒否ポリシーの逸脱","禁止トピックへの応答","外部指示への追従"],"references":["https://genai.owasp.org/llmrisk/llm01-prompt-injection/"]},{"id":"LLM02","category":"llm","name":"機微情報の漏えい","aka":["Sensitive Information Disclosure","PII Leakage"],"severity":"high","summary":"学習データ・コンテキスト・他ユーザー情報・秘密情報が応答に露出する。","description":"PII、認証情報、内部ドキュメント、他テナント/他セッションのデータ、APIキー等がプロンプト経由または記憶/RAG経由で応答に混入する。","attack_vectors":["記憶/履歴の抽出質問","RAGコンテキストの誘導開示","クロステナント/クロスセッション漏えい","学習データの逐語抽出"],"affected_patterns":["memory-manager-supervisor","blackboard","group-chat","router-supervisor"],"controls":[{"id":"c-data-minimization","type":"preventive","name":"データ最小化","desc":"コンテキストに不要な機密を載せない。取得時にスコープ/テナントでフィルタ。","foundation":"RAGアクセス制御、行レベルセキュリティ"},{"id":"c-pii-redaction","type":"preventive","name":"PIIマスキング","desc":"入出力でPII/秘密情報を検出・マスク。","foundation":"DLP/PII検出器、シークレットスキャナ"},{"id":"c-session-isolation","type":"preventive","name":"セッション/テナント分離","desc":"記憶・キャッシュ・埋め込みをテナント単位で隔離。","foundation":"名前空間分離、分離キー"},{"id":"c-egress-dlp","type":"detective","name":"出力DLP","desc":"応答に秘密パターン（鍵/トークン/PII）が含まれないか検査。","foundation":"出力スキャナ、正規表現+エントロピー"}],"foundations":["RAGアクセス制御","PII/シークレット検出","テナント分離","出力DLP"],"atlas":["AML.T0057 LLM Data Leakage","AML.T0024 Exfiltration via ML Inference API"],"nist_rmf":["MAP 5.1","MEASURE 2.10","MANAGE 2.2"],"probes":["leak_system_secrets","leak_other_session","leak_pii_extraction","leak_training_data"],"signals":["APIキー/トークン形式の文字列","PII（メール/電話/番号）","他セッション固有語","内部パス/ホスト名"],"references":["https://genai.owasp.org/llmrisk/llm02-sensitive-information-disclosure/"]},{"id":"LLM03","category":"llm","name":"サプライチェーン脆弱性","aka":["Supply Chain"],"severity":"high","summary":"モデル・データセット・プラグイン・ライブラリ・MCPサーバ等の供給経路に起因するリスク。","description":"第三者モデル/LoRA/データセット/拡張機能/依存パッケージ/MCPサーバの改ざん・バックドア・ライセンス汚染。署名・出所検証の欠如で混入する。","attack_vectors":["改ざんモデル/バックドア重み","汚染データセット","悪性プラグイン/MCPサーバ","依存パッケージのtyposquatting"],"affected_patterns":["agents-as-tools","hierarchical-supervisor","event-driven-swarm"],"controls":[{"id":"c-artifact-signing","type":"preventive","name":"成果物の署名・出所検証","desc":"モデル/データ/プラグインの署名・SBOM・来歴を検証。","foundation":"Sigstore/モデル署名、SBOM、来歴(SLSA)"},{"id":"c-dep-scan","type":"detective","name":"依存スキャン","desc":"脆弱依存・ライセンス・既知CVEを継続スキャン。","foundation":"SCA、脆弱性データベース"},{"id":"c-mcp-allowlist","type":"preventive","name":"MCP/プラグイン許可リスト","desc":"接続先MCPサーバ/ツールを審査・許可制に。","foundation":"レジストリ、ツール審査ゲート"}],"foundations":["モデル/成果物署名","SBOM・来歴","SCA","MCP許可リスト"],"atlas":["AML.T0010 AI Supply Chain Compromise","AML.T0058 Publish Poisoned Models"],"nist_rmf":["GOVERN 6.1","MAP 4.1","MANAGE 3.1"],"probes":["sc_unverified_tool","sc_model_provenance"],"signals":["未署名成果物","未審査MCP/プラグイン","既知CVE依存"],"references":["https://genai.owasp.org/llmrisk/llm03-supply-chain/"]},{"id":"LLM04","category":"llm","name":"データ・モデル汚染","aka":["Data and Model Poisoning","Backdoor"],"severity":"high","summary":"学習/微調整/RAGインデックスに悪性データを注入し挙動を改変する。","description":"事前学習/微調整データ、フィードバックループ、RAGの取り込み経路に汚染を仕込み、特定トリガで誤動作・バックドア・バイアスを誘発。","attack_vectors":["RAGインデックス汚染（False RAG Entry）","フィードバック汚染（RLHF/嗜好）","微調整データ汚染","トリガ付きバックドア"],"affected_patterns":["memory-manager-supervisor","blackboard","pipeline"],"controls":[{"id":"c-ingest-validation","type":"preventive","name":"取り込み検証","desc":"RAG/学習データの出所・整合・異常を検証。署名済みソースのみ取り込み。","foundation":"ソース許可リスト、内容検証、異常検知"},{"id":"c-data-versioning","type":"detective","name":"データ版管理・来歴","desc":"データ系統を追跡し汚染の遡及を可能に。","foundation":"データリネージ、版管理"},{"id":"c-canary-eval","type":"detective","name":"回帰評価/カナリア","desc":"既知トリガ・回帰テストで挙動変化を検知。","foundation":"評価ハーネス、レッドチーム回帰"}],"foundations":["取り込み検証","データリネージ","回帰評価ハーネス"],"atlas":["AML.T0020 Poison Training Data","AML.T0070 RAG Poisoning"],"nist_rmf":["MAP 2.3","MEASURE 2.8","MANAGE 2.3"],"probes":["poison_rag_inject","poison_trigger_probe"],"signals":["特定トリガで方針逸脱","ソース不明の取り込み","評価スコアの回帰"],"references":["https://genai.owasp.org/llmrisk/llm04-data-and-model-poisoning/"]},{"id":"LLM05","category":"llm","name":"不適切な出力処理","aka":["Improper Output Handling","Insecure Output Handling"],"severity":"high","summary":"モデル出力を検証せず下流へ渡し、XSS/SQLi/SSRF/コマンド実行等を誘発する。","description":"LLM出力をHTML/SQL/シェル/URL/コードとして無検証で消費すると、生成された悪性ペイロードが下流システムで実行される。エージェントのツール引数生成で特に危険。","attack_vectors":["生成HTML→XSS","生成SQL→SQLi","生成コマンド→RCE","生成URL→SSRF","Markdown画像によるデータ外送"],"affected_patterns":["pipeline","agents-as-tools","planner-executor","dag-workflow"],"controls":[{"id":"c-output-encoding","type":"preventive","name":"出力エンコード/サニタイズ","desc":"下流コンテキストに応じてエスケープ/サニタイズ。LLM出力は信頼しない。","foundation":"コンテキスト別エスケープ、許可リスト"},{"id":"c-param-tools","type":"preventive","name":"パラメータ化ツール","desc":"自由文ではなく型付き・スキーマ検証済み引数のみ実行。","foundation":"JSONスキーマ検証、型付きツールIF"},{"id":"c-egress-allowlist","type":"preventive","name":"下流到達先の制限","desc":"ツールが叩けるURL/ホスト/コマンドを許可リスト化（SSRF対策）。","foundation":"Egress制御、ネットワークポリシー"}],"foundations":["コンテキスト別エスケープ","スキーマ検証ツールIF","Egress許可リスト"],"atlas":["AML.T0053 LLM Plugin Compromise"],"nist_rmf":["MEASURE 2.6","MANAGE 4.1"],"probes":["output_xss_payload","output_sqli_payload","output_markdown_exfil"],"signals":["生成された\u003cscript>","生成SQL/シェル","外部URLへの画像/リンク埋め込み"],"references":["https://genai.owasp.org/llmrisk/llm05-improper-output-handling/"]},{"id":"LLM06","category":"llm","name":"過剰なエージェンシー","aka":["Excessive Agency"],"severity":"high","summary":"過剰な機能・権限・自律性により、誤動作や悪用時の被害が拡大する。","description":"不要なツール・広すぎる権限・人手確認なしの自律実行により、誤判断やインジェクション成功時に重大操作（送金/削除/送信）が実行される。エージェントの中核リスク。","attack_vectors":["不要ツールの誘発呼び出し","広域権限の悪用","確認なし不可逆操作","権限の連鎖的拡大"],"affected_patterns":["agents-as-tools","planner-executor","manager-worker","hierarchical-supervisor","market-bidding"],"controls":[{"id":"c-min-functionality","type":"preventive","name":"最小機能","desc":"必要なツール/機能のみ付与し、危険機能は除外。","foundation":"ツール許可リスト、機能カタログ"},{"id":"c-scoped-perms","type":"preventive","name":"スコープ権限","desc":"操作ごとに最小スコープ・短命トークン・テナント境界。","foundation":"OAuthスコープ、短命資格、RBAC/ABAC"},{"id":"c-action-approval","type":"responsive","name":"操作承認/レート制限","desc":"不可逆/高額/大量操作は承認・上限・ドライランを必須化。","foundation":"承認ゲート、クォータ、ドライラン"},{"id":"c-action-audit","type":"detective","name":"操作監査","desc":"全ツール呼び出しを追跡可能に記録し異常検知。","foundation":"監査ログ、トレーシング"}],"foundations":["最小機能/最小権限","短命スコープ資格","承認ゲート+レート制限","監査ログ"],"atlas":["AML.T0053 LLM Plugin Compromise","AML.T0072 Agent Tool Misuse"],"nist_rmf":["GOVERN 1.3","MANAGE 1.3","MANAGE 2.2"],"probes":["agency_unrequested_tool","agency_privilege_scope","agency_destructive_noconfirm"],"signals":["要求外ツールの呼び出し","確認なしの不可逆操作","権限境界の越境"],"references":["https://genai.owasp.org/llmrisk/llm06-excessive-agency/"]},{"id":"LLM07","category":"llm","name":"システムプロンプト漏えい","aka":["System Prompt Leakage"],"severity":"medium","summary":"システムプロンプトの開示自体、およびそこに含めた秘密・ルールの露出。","description":"システムプロンプトの逐語開示や、そこに直書きした資格情報/内部ルール/フィルタ基準が露出する。プロンプトを機密保護の手段に使う設計自体がアンチパターン。","attack_vectors":["『最初の指示を全部見せて』系抽出","差分/翻訳/要約による間接抽出","プロンプト内ルールの推定"],"affected_patterns":["router-supervisor","critic-supervisor","handoff-swarm"],"controls":[{"id":"c-no-secret-in-prompt","type":"preventive","name":"プロンプトに秘密を置かない","desc":"資格情報・キー・厳格ルールはプロンプト外（保管庫/ポリシーエンジン）へ。","foundation":"シークレット保管庫、外部ポリシー"},{"id":"c-prompt-leak-guard","type":"detective","name":"プロンプト漏えい検知","desc":"応答にシステムプロンプト断片が含まれないか照合。","foundation":"出力照合、カナリアトークン"},{"id":"c-enforce-outside","type":"preventive","name":"制御をモデル外で強制","desc":"認可・フィルタはアプリ層で強制し、プロンプト遵守に依存しない。","foundation":"認可ミドルウェア、ガードレール"}],"foundations":["秘密の外部化","カナリアトークン","モデル外での認可強制"],"atlas":["AML.T0056 Extract LLM System Prompt"],"nist_rmf":["MEASURE 2.7","MANAGE 2.2"],"probes":["sysprompt_extract_verbatim","sysprompt_canary"],"signals":["システムプロンプト断片の再出力","カナリアトークンの露出"],"references":["https://genai.owasp.org/llmrisk/llm07-system-prompt-leakage/"]},{"id":"LLM08","category":"llm","name":"ベクトル・埋め込みの脆弱性","aka":["Vector and Embedding Weaknesses","RAG Security"],"severity":"medium","summary":"ベクトルDB/埋め込み/RAG経路での漏えい・汚染・越権アクセス。","description":"埋め込み反転による情報復元、ベクトルストアの越権検索、クロステナント取得、埋め込み汚染、知識結合による意図しない暴露。","attack_vectors":["埋め込み反転","越権ベクトル検索","クロステナント取得","埋め込み/インデックス汚染"],"affected_patterns":["memory-manager-supervisor","blackboard"],"controls":[{"id":"c-vector-acl","type":"preventive","name":"ベクトルアクセス制御","desc":"検索時にテナント/権限でフィルタ（pre-filter）。","foundation":"メタデータフィルタ、行レベルセキュリティ"},{"id":"c-embed-protect","type":"preventive","name":"埋め込み保護","desc":"埋め込みを機密として扱い、暗号化・アクセス制限。","foundation":"暗号化保存、アクセス監査"},{"id":"c-rag-source-trust","type":"preventive","name":"RAGソース信頼管理","desc":"取り込み元の信頼度を管理し間接インジェクション/汚染を抑止。","foundation":"ソース許可リスト、内容検証"}],"foundations":["ベクトルACL/pre-filter","埋め込み暗号化","RAGソース信頼管理"],"atlas":["AML.T0070 RAG Poisoning","AML.T0024 Exfiltration via Inference API"],"nist_rmf":["MAP 5.1","MEASURE 2.10"],"probes":["rag_cross_tenant","rag_unauthorized_retrieval"],"signals":["権限外文書の取得","他テナント断片の出現"],"references":["https://genai.owasp.org/llmrisk/llm08-vector-and-embedding-weaknesses/"]},{"id":"LLM09","category":"llm","name":"誤情報","aka":["Misinformation","Hallucination","Overreliance"],"severity":"medium","summary":"もっともらしい虚偽（幻覚）と、それへの過信が誤った意思決定を招く。","description":"幻覚・古い情報・誤帰属・捏造された引用/コード（パッケージ幻覚→スロップスクワッティング）。人間/下流の過信で被害が拡大。","attack_vectors":["事実誤認の誘発","捏造引用/出典","存在しないパッケージ提案","誘導による断定"],"affected_patterns":["debate-committee","manager-worker","single-chain"],"controls":[{"id":"c-grounding","type":"preventive","name":"グラウンディング/出典提示","desc":"RAGで根拠付け、出典明示、根拠なき断定を抑制。","foundation":"RAG、引用付き生成"},{"id":"c-verify-critic","type":"detective","name":"検証/Critic","desc":"事実検証エージェント・自己整合チェック・引用検証。","foundation":"Critic/Verifierパターン、自己整合"},{"id":"c-uncertainty-hitl","type":"responsive","name":"不確実性の明示と人手確認","desc":"信頼度提示、重要判断は人手確認、過信防止UX。","foundation":"不確実性表示、HITL"}],"foundations":["グラウンディング/引用","Critic/Verifier","不確実性表示+HITL"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["MEASURE 2.9","MEASURE 2.11","MANAGE 4.1"],"probes":["misinfo_fabricated_citation","misinfo_package_hallucination"],"signals":["検証不能な出典","存在しないパッケージ/API","根拠なき断定"],"references":["https://genai.owasp.org/llmrisk/llm09-misinformation/"]},{"id":"LLM10","category":"llm","name":"無制限なリソース消費","aka":["Unbounded Consumption","Model DoS","Denial of Wallet"],"severity":"medium","summary":"トークン/計算/コストの無制限消費によるDoSやコスト枯渇、モデル抽出。","description":"巨大入力・再帰展開・無限ループ・大量並列でコスト/可用性を枯渇。推論APIの大量問い合わせによるモデル抽出も含む。エージェントの自己ループで顕在化。","attack_vectors":["巨大/再帰入力","エージェント無限ループ","高コスト操作の連打","推論APIによるモデル抽出"],"affected_patterns":["iterative-loop","event-driven-swarm","market-bidding","group-chat"],"controls":[{"id":"c-quota-budget","type":"preventive","name":"クォータ/予算上限","desc":"トークン・コスト・呼び出し回数・実行時間に上限。","foundation":"レート制限、予算ガード、サーキットブレーカ"},{"id":"c-loop-guard","type":"preventive","name":"ループ/再帰ガード","desc":"ステップ数・深さ・反復に上限、停止条件を必須化。","foundation":"最大ステップ、停止条件、ウォッチドッグ"},{"id":"c-anomaly-rate","type":"detective","name":"消費異常検知","desc":"コスト/トークンの急増を検知しアラート/遮断。","foundation":"コスト監視、異常検知"}],"foundations":["クォータ+予算ガード","ループ/深さ上限","コスト異常検知"],"atlas":["AML.T0034 Cost Harvesting","AML.T0040 ML Model Inference API Access","AML.T0024 Model Extraction"],"nist_rmf":["MEASURE 2.6","MANAGE 2.2"],"probes":["consume_recursive_expand","consume_loop_trigger"],"signals":["ステップ数/トークンの暴騰","停止しない反復","コスト急増"],"references":["https://genai.owasp.org/llmrisk/llm10-unbounded-consumption/"]},{"id":"ASI-T01","category":"agentic","name":"メモリ汚染","aka":["Memory Poisoning"],"severity":"high","summary":"エージェントの短期/長期メモリに虚偽・悪性データを注入し意思決定を歪める。","description":"会話記憶・スクラッチパッド・長期ストア・共有ブラックボードに不正データを書き込み、後続の判断や他エージェントを操作。永続化されると反復被害となる。","attack_vectors":["記憶への命令注入","ブラックボード/共有メモリ汚染","セッション越境の記憶混入","偽の事実の永続化"],"affected_patterns":["memory-manager-supervisor","blackboard","group-chat","handoff-swarm"],"controls":[{"id":"c-mem-validate","type":"preventive","name":"メモリ書き込み検証","desc":"書き込み内容を検証・出所付与し、命令注入を無害化。","foundation":"書き込みゲート、内容検証"},{"id":"c-mem-isolation","type":"preventive","name":"メモリ隔離","desc":"セッション/テナント/信頼レベルで記憶を分離。","foundation":"名前空間分離、信頼ラベル"},{"id":"c-mem-provenance","type":"detective","name":"記憶の来歴・異常検知","desc":"記憶の出所追跡と異常な書き換え検知、定期サニタイズ。","foundation":"リネージ、異常検知、TTL/サニタイズ"}],"foundations":["書き込みゲート/検証","記憶の隔離","来歴+定期サニタイズ"],"atlas":["AML.T0070 RAG Poisoning","AML.T0020 Poison Training Data"],"nist_rmf":["MAP 2.3","MANAGE 2.3"],"probes":["mem_inject_persist","mem_cross_session"],"signals":["記憶経由の方針逸脱","セッション越境データ","出所不明の記憶"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T02","category":"agentic","name":"ツール悪用","aka":["Tool Misuse"],"severity":"critical","summary":"正規ツールを欺いて意図しない/有害な操作を実行させる。","description":"プロンプト操作によりエージェントが本来の目的に反してツール（メール送信・ファイル削除・APIコール）を悪用。間接インジェクションと組み合わさり連鎖被害となる。","attack_vectors":["ツール引数の改ざん誘導","ツール連鎖の悪用","ツール出力経由の再注入","権限境界外のツール呼び出し"],"affected_patterns":["agents-as-tools","planner-executor","manager-worker","event-driven-swarm"],"controls":[{"id":"c-tool-authz","type":"preventive","name":"ツール認可・境界明示","desc":"ツールごとに認可・利用条件・操作境界を明示し検証。","foundation":"ツールポリシー、ABAC"},{"id":"c-tool-schema","type":"preventive","name":"引数スキーマ検証","desc":"型・範囲・許可値を厳格検証し危険値を拒否。","foundation":"JSONスキーマ、検証ミドルウェア"},{"id":"c-tool-monitor","type":"detective","name":"利用パターン監視","desc":"ツール呼び出しログで異常パターンを検知。","foundation":"実行ログ、異常検知"}],"foundations":["ツール認可+境界","引数スキーマ検証","利用監視"],"atlas":["AML.T0072 Agent Tool Misuse","AML.T0053 LLM Plugin Compromise"],"nist_rmf":["MANAGE 1.3","MANAGE 2.2"],"probes":["tool_arg_tamper","tool_chain_abuse","agency_unrequested_tool"],"signals":["目的外ツール呼び出し","危険引数の生成","境界外操作"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T03","category":"agentic","name":"権限の侵害","aka":["Privilege Compromise","Privilege Escalation"],"severity":"high","summary":"エージェントの権限管理の不備で越権・権限昇格が発生する。","description":"動的な役割切替・委任・継承された資格の悪用で、エージェントが想定外の権限を獲得し越権操作を行う。多エージェント間の委任で顕在化。","attack_vectors":["役割/権限の動的昇格","委任資格の悪用","混乱した代理(confused deputy)","共有資格の流用"],"affected_patterns":["hierarchical-supervisor","manager-worker","handoff-swarm","agents-as-tools"],"controls":[{"id":"c-agent-identity","type":"preventive","name":"エージェントID/最小権限","desc":"各エージェントに固有IDと最小権限、短命資格を付与。","foundation":"ワークロードID、短命トークン、RBAC/ABAC"},{"id":"c-delegation-control","type":"preventive","name":"委任の制御","desc":"委任スコープを縮小のみ許可し、境界を強制。","foundation":"スコープ縮小委任、ポリシーエンジン"},{"id":"c-priv-audit","type":"detective","name":"権限利用監査","desc":"権限境界越えを検知・記録。","foundation":"監査ログ、アクセスレビュー"}],"foundations":["エージェントID+最小権限","スコープ縮小委任","権限監査"],"atlas":["AML.T0072 Agent Tool Misuse"],"nist_rmf":["GOVERN 1.3","MANAGE 1.3"],"probes":["priv_escalation_request","priv_confused_deputy"],"signals":["権限境界越え","想定外スコープ取得","委任の拡大"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T04","category":"agentic","name":"リソース過負荷","aka":["Resource Overload"],"severity":"medium","summary":"計算・メモリ・サービス容量を枯渇させ可用性を低下させる。","description":"エージェントの自律性を悪用し大量タスク/呼び出しを誘発、計算・API・コストを枯渇させる。LLM10と関連。","attack_vectors":["タスク爆発の誘発","並列エージェント乱立","高コスト操作連打"],"affected_patterns":["market-bidding","event-driven-swarm","group-chat","iterative-loop"],"controls":[{"id":"c-resource-quota","type":"preventive","name":"リソースクォータ","desc":"エージェント数・並列度・コスト・時間に上限。","foundation":"クォータ、サーキットブレーカ"},{"id":"c-rate-limit","type":"preventive","name":"レート制限/バックプレッシャ","desc":"呼び出し頻度を制限しバックプレッシャを適用。","foundation":"レート制限、キュー制御"}],"foundations":["クォータ+サーキットブレーカ","レート制限/バックプレッシャ"],"atlas":["AML.T0034 Cost Harvesting","AML.T0029 Denial of ML Service"],"nist_rmf":["MEASURE 2.6","MANAGE 2.2"],"probes":["consume_loop_trigger","consume_recursive_expand"],"signals":["並列度/コスト暴騰","タスク爆発"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T05","category":"agentic","name":"カスケード幻覚攻撃","aka":["Cascading Hallucination Attacks"],"severity":"medium","summary":"1つの幻覚/誤情報が連鎖し、多段・多エージェントで増幅される。","description":"あるエージェントの誤出力が次段の入力/記憶として伝播し、システム全体が誤った前提で動作。多段パイプラインや多エージェントで増幅。","attack_vectors":["誤情報の伝播","記憶への定着","相互参照による増幅"],"affected_patterns":["pipeline","manager-worker","blackboard","group-chat","dag-workflow"],"controls":[{"id":"c-stepwise-verify","type":"detective","name":"段階的検証","desc":"各段でグラウンディング/整合検証を行い伝播を遮断。","foundation":"Verifier、整合チェック"},{"id":"c-source-trust-prop","type":"preventive","name":"信頼度の伝播管理","desc":"情報に信頼ラベルを付与し未検証情報の重み付けを下げる。","foundation":"信頼ラベル、来歴"}],"foundations":["段階検証","信頼ラベル伝播"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["MEASURE 2.9","MANAGE 4.1"],"probes":["misinfo_fabricated_citation"],"signals":["未検証情報の連鎖","下流での誤前提"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T06","category":"agentic","name":"意図破壊・目標操作","aka":["Intent Breaking & Goal Manipulation"],"severity":"high","summary":"エージェントの目標・計画を操作し、本来の意図から逸脱させる。","description":"計画段階や目標表現に介入し、エージェントの目的そのものを書き換える。プランナ/リプランナ経路で顕在化。","attack_vectors":["目標の上書き","計画への注入","報酬/評価基準の操作","サブゴールのすり替え"],"affected_patterns":["planner-executor","hierarchical-supervisor","debate-committee"],"controls":[{"id":"c-goal-integrity","type":"preventive","name":"目標/計画の整合性保護","desc":"目標・制約を改変不能に固定し、計画を制約に照合。","foundation":"不変ポリシー、計画検証"},{"id":"c-plan-review","type":"detective","name":"計画レビュー","desc":"実行前に計画を方針・境界に照合（Critic）。","foundation":"Criticパターン、ポリシーチェック"}],"foundations":["目標の不変保護","計画レビュー/Critic"],"atlas":["AML.T0051 LLM Prompt Injection","AML.T0054 LLM Jailbreak"],"nist_rmf":["MANAGE 2.2","MEASURE 2.7"],"probes":["goal_override","pi_direct_override"],"signals":["目標逸脱","計画の方針外変更"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T07","category":"agentic","name":"ミスアライン・欺瞞的挙動","aka":["Misaligned & Deceptive Behaviors"],"severity":"high","summary":"エージェントが目標達成のため有害/欺瞞的手段を選び、監視を回避する。","description":"目標最適化の過程で、規則回避・虚偽報告・サンドバッグ・監視回避などのミスアラインな振る舞いが生じる。","attack_vectors":["報酬ハッキング","虚偽の進捗報告","監視時のみ従順(評価逃れ)","禁止手段の正当化"],"affected_patterns":["planner-executor","iterative-loop","market-bidding","hierarchical-supervisor"],"controls":[{"id":"c-behavior-eval","type":"detective","name":"整合性評価/レッドチーム","desc":"欺瞞・報酬ハッキングを評価で検知。","foundation":"整合性評価、レッドチーム、観測性"},{"id":"c-constrained-objective","type":"preventive","name":"制約付き目的","desc":"許可手段を明示し、禁止手段をハード制約で遮断。","foundation":"制約付き最適化、ポリシーガード"}],"foundations":["整合性評価+レッドチーム","制約付き目的"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["GOVERN 4.1","MEASURE 2.11"],"probes":["deceptive_eval_gaming"],"signals":["報告と実態の乖離","禁止手段の使用","監視回避"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T08","category":"agentic","name":"否認・追跡不能","aka":["Repudiation & Untraceability"],"severity":"medium","summary":"行動の記録/帰属が不十分で、誰が何をしたか追跡・説明できない。","description":"エージェントの判断・ツール呼び出し・データアクセスのログが欠落/改ざん可能だと、インシデント調査・責任追及・是正ができない。","attack_vectors":["ログ欠落の悪用","ログ改ざん","帰属不能な共有ID","決定根拠の非記録"],"affected_patterns":["event-driven-swarm","swarm-generic","agents-as-tools"],"controls":[{"id":"c-audit-trail","type":"detective","name":"改ざん耐性監査証跡","desc":"決定・入力・ツール・出力を改ざん耐性ログに記録。","foundation":"追記専用ログ、署名、トレースID"},{"id":"c-attribution","type":"governance","name":"行為の帰属","desc":"全行為をエージェント/ユーザIDに一意帰属。","foundation":"一意ID、相関ID、OpenTelemetry"}],"foundations":["改ざん耐性監査証跡","一意帰属/トレーシング"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["GOVERN 1.4","MANAGE 4.1"],"probes":["audit_trace_presence"],"signals":["ログ欠落","帰属不能な操作","相関ID不在"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T09","category":"agentic","name":"ID偽装・なりすまし","aka":["Identity Spoofing & Impersonation"],"severity":"high","summary":"エージェント/ユーザ/サービスのなりすましで信頼境界を突破する。","description":"弱い認証・共有資格・検証なきA2A通信により、攻撃者が正規エージェント/ユーザになりすます。多エージェント連携で深刻化。","attack_vectors":["エージェントなりすまし","ユーザ偽装","A2Aメッセージ偽造","共有資格の流用"],"affected_patterns":["handoff-swarm","group-chat","event-driven-swarm","agents-as-tools"],"controls":[{"id":"c-strong-authn","type":"preventive","name":"強い相互認証","desc":"エージェント間/サービス間でmTLS・署名付きメッセージ・固有ID。","foundation":"mTLS、ワークロードID、メッセージ署名"},{"id":"c-msg-integrity","type":"preventive","name":"メッセージ完全性","desc":"A2A/イベントに署名・nonce・リプレイ防止。","foundation":"署名、nonce、再送防止"}],"foundations":["相互認証(mTLS/ID)","メッセージ署名+リプレイ防止"],"atlas":["AML.T0073 Impersonation"],"nist_rmf":["GOVERN 1.3","MANAGE 1.3"],"probes":["identity_spoof_message"],"signals":["未署名/偽造メッセージ受理","共有資格利用"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T10","category":"agentic","name":"HITLの過負荷","aka":["Overwhelming Human-in-the-Loop"],"severity":"medium","summary":"承認/確認要求を氾濫させ、人間のチェック機能を麻痺させる。","description":"大量の承認要求や警告で人間を疲弊させ（alert fatigue）、なし崩しの承認や見落としを誘発。安全装置としてのHITLを無効化する。","attack_vectors":["承認要求の氾濫","警告疲れの誘発","重要要求の埋没"],"affected_patterns":["human-in-the-loop","critic-supervisor"],"controls":[{"id":"c-risk-based-hitl","type":"preventive","name":"リスクベース承認","desc":"高リスクのみ人手、低リスクは自動化し要求を集約。","foundation":"リスクスコアリング、要求集約"},{"id":"c-hitl-context","type":"preventive","name":"意思決定支援","desc":"十分な文脈・推奨・差分を提示し判断負荷を軽減。","foundation":"決定支援UI、差分提示"}],"foundations":["リスクベース承認/集約","意思決定支援UI"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["GOVERN 3.2","MANAGE 4.1"],"probes":["hitl_flood"],"signals":["承認要求の氾濫","重要要求の埋没"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T11","category":"agentic","name":"予期せぬRCE・コード攻撃","aka":["Unexpected RCE and Code Attacks"],"severity":"critical","summary":"コード生成/実行機能を悪用し任意コード実行・環境侵害を行う。","description":"コードインタプリタ・シェル・eval等を持つエージェントで、生成/注入されたコードが実行され、サンドボックス脱出・横展開・データ窃取に至る。","attack_vectors":["生成コードへの悪性注入","サンドボックス脱出","依存解決の悪用","シェル/eval悪用"],"affected_patterns":["planner-executor","agents-as-tools","iterative-loop"],"controls":[{"id":"c-sandbox","type":"preventive","name":"強い隔離サンドボックス","desc":"コード実行を使い捨て・最小権限・ネットワーク遮断の隔離環境で。","foundation":"コンテナ/microVM、seccomp、egress遮断"},{"id":"c-code-policy","type":"preventive","name":"実行ポリシー","desc":"許可言語/API/リソースを制限し危険呼び出しを遮断。","foundation":"許可リスト、静的検査、ケーパビリティ制限"},{"id":"c-exec-monitor","type":"detective","name":"実行監視","desc":"プロセス/ネットワーク/ファイル操作を監視・記録。","foundation":"ランタイム監視、監査"}],"foundations":["隔離サンドボックス(microVM)","実行ポリシー/ケーパビリティ制限","ランタイム監視"],"atlas":["AML.T0050 Command and Scripting Interpreter","AML.T0053 LLM Plugin Compromise"],"nist_rmf":["MANAGE 2.2","MANAGE 4.1"],"probes":["rce_code_exec","output_sqli_payload"],"signals":["想定外プロセス/接続","サンドボックス外アクセス","危険API呼び出し"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T12","category":"agentic","name":"エージェント間通信汚染","aka":["Agent Communication Poisoning"],"severity":"high","summary":"A2A通信/共有チャネルに悪性メッセージを注入し協調を破壊する。","description":"メッセージバス・共有会話・ブラックボード・MCP経路に偽/悪性メッセージを注入し、他エージェントの判断を操作。間接インジェクションの多エージェント版。","attack_vectors":["共有チャネルへの注入","メッセージ改ざん","中間者","MCP応答の汚染"],"affected_patterns":["group-chat","blackboard","event-driven-swarm","handoff-swarm"],"controls":[{"id":"c-channel-authz","type":"preventive","name":"チャネル認可・署名","desc":"投稿者認可とメッセージ署名で偽/改ざんを排除。","foundation":"署名、ACL、mTLS"},{"id":"c-msg-validation","type":"preventive","name":"メッセージ検証","desc":"受信メッセージを命令注入として扱わず検証・無害化。","foundation":"入力ガード、スキーマ検証"}],"foundations":["チャネル認可+署名","受信メッセージ検証"],"atlas":["AML.T0051.001 Indirect Prompt Injection"],"nist_rmf":["MANAGE 2.2","MEASURE 2.7"],"probes":["a2a_message_poison","pi_indirect_doc"],"signals":["未署名メッセージの追従","共有チャネル経由の逸脱"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T13","category":"agentic","name":"多エージェント系の不正エージェント","aka":["Rogue Agents in Multi-Agent Systems"],"severity":"high","summary":"侵害/悪性のエージェントが系内に紛れ込み他を操作・妨害する。","description":"登録・検証の不備により悪性/侵害エージェントが系に参加し、情報窃取・妨害・他エージェント操作を行う。","attack_vectors":["悪性エージェントの参加","正規エージェントの侵害","内部からの操作"],"affected_patterns":["swarm-generic","market-bidding","group-chat","event-driven-swarm"],"controls":[{"id":"c-agent-registry","type":"preventive","name":"エージェント登録・認証","desc":"参加エージェントを審査・認証・継続検証。","foundation":"レジストリ、認証、姿勢検証"},{"id":"c-behavior-monitor","type":"detective","name":"挙動監視・隔離","desc":"異常挙動を検知し自動隔離。","foundation":"異常検知、隔離/封じ込め"}],"foundations":["登録/認証/継続検証","挙動監視+隔離"],"atlas":["AML.T0073 Impersonation"],"nist_rmf":["GOVERN 1.3","MANAGE 2.3"],"probes":["identity_spoof_message"],"signals":["未登録エージェントの参加","異常な内部挙動"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T14","category":"agentic","name":"多エージェント系への人的攻撃","aka":["Human Attacks on Multi-Agent Systems"],"severity":"medium","summary":"人間の攻撃者が系の構造・委任・信頼関係を悪用して攻撃する。","description":"攻撃者が多エージェントの委任連鎖・信頼境界・調整機構を悪用し、単体では困難な攻撃を成立させる。","attack_vectors":["委任連鎖の悪用","信頼境界の突破","調整機構の悪用"],"affected_patterns":["hierarchical-supervisor","handoff-swarm","market-bidding"],"controls":[{"id":"c-trust-boundary","type":"preventive","name":"信頼境界の明示","desc":"エージェント間の信頼境界・委任範囲を明示し検証。","foundation":"境界モデル、委任検証"},{"id":"c-system-redteam","type":"detective","name":"システムレッドチーム","desc":"系全体を対象に連鎖攻撃を継続評価。","foundation":"レッドチーム、脅威モデリング"}],"foundations":["信頼境界モデル","システム全体のレッドチーム"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["MAP 1.1","MEASURE 2.7"],"probes":["priv_confused_deputy"],"signals":["委任連鎖の越境","信頼境界の突破"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"ASI-T15","category":"agentic","name":"人間の心理操作","aka":["Human Manipulation"],"severity":"medium","summary":"エージェントが（誘導され）人間ユーザを欺き、有害行動へ誘導する。","description":"侵害/ミスアラインされたエージェントが、信頼を悪用してユーザを誤誘導・説得・ソーシャルエンジニアリングし、有害な操作や開示を引き出す。","attack_vectors":["過信の悪用","誤誘導/説得","緊急性の演出","フィッシング的誘導"],"affected_patterns":["single-chain","router-supervisor","handoff-swarm","human-in-the-loop"],"controls":[{"id":"c-transparency","type":"preventive","name":"透明性・出典提示","desc":"AIである旨・根拠・不確実性を明示し過信を抑制。","foundation":"開示UX、出典提示"},{"id":"c-user-guardrail","type":"detective","name":"誘導検知","desc":"ユーザを危険操作へ誘導する応答を検知・抑止。","foundation":"出力ガード、ポリシー"}],"foundations":["透明性/出典提示","誘導検知ガード"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["GOVERN 5.1","MEASURE 3.3"],"probes":["manipulation_urgency"],"signals":["危険操作への誘導","緊急性の過度な演出"],"references":["https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/"]},{"id":"INF-01","category":"infra","name":"エージェントID・認証基盤の不備","aka":["Agent Identity","Non-Human Identity (NHI)"],"severity":"high","summary":"エージェント固有のID・認証・ライフサイクル管理が欠如している。","description":"エージェントが人間ユーザ資格や共有キーで動作し、固有ID・最小権限・失効・ローテーションがない。なりすまし・越権・追跡不能の温床。","attack_vectors":["共有/人間資格の流用","失効されない長命資格","ID無しの行為"],"affected_patterns":["agents-as-tools","hierarchical-supervisor","event-driven-swarm"],"controls":[{"id":"c-nhi","type":"preventive","name":"非人間ID(NHI)管理","desc":"各エージェント/ワークロードに固有ID・短命資格・ローテーション・失効。","foundation":"ワークロードID、SPIFFE/SVID、Secrets Manager"},{"id":"c-lifecycle","type":"governance","name":"IDライフサイクル","desc":"発行・棚卸し・失効・監査を統制。","foundation":"ID台帳、アクセスレビュー"}],"foundations":["NHI/ワークロードID","短命資格+ローテーション","IDライフサイクル統制"],"atlas":["AML.T0073 Impersonation"],"nist_rmf":["GOVERN 1.3","MANAGE 1.3"],"probes":[],"signals":["共有資格","長命キー","ID台帳不在"],"references":["AIエージェント_ID・セキュリティ要件_4階層_雛形.xlsx"]},{"id":"INF-02","category":"infra","name":"シークレット管理の不備","aka":["Secrets Management"],"severity":"high","summary":"APIキー・トークンがプロンプト/コード/ログに露出する。","description":"資格情報がシステムプロンプト・環境変数の不適切な露出・ログ・トレースに残存し、漏えい・悪用される。","attack_vectors":["プロンプト直書き","ログ/トレース露出","クライアント露出"],"affected_patterns":["agents-as-tools","pipeline"],"controls":[{"id":"c-vault","type":"preventive","name":"保管庫+注入","desc":"秘密は保管庫から実行時注入、プロンプト/コードに置かない。","foundation":"Secrets Manager/Vault、動的シークレット"},{"id":"c-log-redaction","type":"preventive","name":"ログのマスキング","desc":"ログ/トレースから秘密を自動マスク。","foundation":"ログマスキング、シークレットスキャン"}],"foundations":["保管庫+実行時注入","ログマスキング/スキャン"],"atlas":["AML.T0057 LLM Data Leakage"],"nist_rmf":["MANAGE 2.2","MEASURE 2.10"],"probes":["leak_system_secrets"],"signals":["ログ内の鍵/トークン","プロンプト内資格情報"],"references":["AIエージェント_ID・セキュリティ要件_4階層_雛形.xlsx"]},{"id":"INF-03","category":"infra","name":"可観測性・トレーシングの欠如","aka":["Observability","Tracing","Auditability"],"severity":"medium","summary":"プロンプト・ツール・判断・コストのトレースが取得できない。","description":"入出力・ツール呼び出し・トークン/コスト・判断根拠のトレースが欠如し、検知・調査・回帰検証・コスト管理ができない。回帰的なセキュリティ検証の前提条件。","attack_vectors":["検知不能な悪用","調査困難","回帰検証不能"],"affected_patterns":["event-driven-swarm","swarm-generic","hierarchical-supervisor"],"controls":[{"id":"c-tracing","type":"detective","name":"エンドツーエンドトレーシング","desc":"プロンプト/ツール/判断/コストを相関IDで記録。","foundation":"OpenTelemetry GenAI、LLMトレーシング"},{"id":"c-eval-harness","type":"governance","name":"継続評価ハーネス","desc":"回帰的にレッドチーム/評価を回し変化を追跡。","foundation":"評価ハーネス、CI連携、本ツール(aiva)"}],"foundations":["OpenTelemetry GenAIトレーシング","継続評価/レッドチームハーネス"],"atlas":["AML.T0048 External Harms"],"nist_rmf":["MEASURE 1.1","MEASURE 2.1","MANAGE 4.1"],"probes":["audit_trace_presence"],"signals":["トレース欠如","相関ID不在","コスト不可視"],"references":["NIST AI RMF MEASURE"]},{"id":"INF-04","category":"infra","name":"ネットワーク/Egress制御の不備","aka":["Egress Control","SSRF","Network Isolation"],"severity":"high","summary":"エージェント/ツールの外部到達が無制限で、外送・SSRF・横展開を招く。","description":"ツール・コード実行・RAGフェッチの外部到達先が無制限だと、データ外送・内部メタデータ(SSRF)・横展開に悪用される。","attack_vectors":["データ外送","SSRF(内部メタデータ)","横展開","悪性URLフェッチ"],"affected_patterns":["agents-as-tools","planner-executor","pipeline"],"controls":[{"id":"c-egress-policy","type":"preventive","name":"Egress許可リスト","desc":"外部到達先を許可リスト化、内部レンジを遮断。","foundation":"Egressプロキシ、ネットワークポリシー、メタデータ保護"},{"id":"c-network-seg","type":"preventive","name":"ネットワーク分離","desc":"エージェント実行環境を最小到達のセグメントへ隔離。","foundation":"セグメンテーション、ゼロトラスト"}],"foundations":["Egress許可リスト/プロキシ","ネットワーク分離(ゼロトラスト)"],"atlas":["AML.T0024 Exfiltration via Inference API","AML.T0048 External Harms"],"nist_rmf":["MANAGE 2.2","MANAGE 4.1"],"probes":["output_markdown_exfil","rce_code_exec"],"signals":["無制限な外部接続","内部メタデータへのアクセス","未知ホストへの外送"],"references":["OWASP LLM05/LLM06"]}],"unknown_discovery":{"title":"未知脆弱性の探索手法（既知分類に依存しない検査）","rationale":"既知シグネチャだけでは新規・組み合わせ・コンテキスト依存の脆弱性を見逃す。挙動ベースの差分・変異・回帰探索で『仕様から逸脱する応答』を異常として検出し、人手トリアージに回す。","methods":[{"id":"mutation","name":"ペイロード変異","desc":"既知プローブを符号化・言い換え・言語切替・トークン挿入・連結で系統的に変異させ、ガードレールの境界を探る。種(seed)→変異→評価のループ。"},{"id":"recursive-deepening","name":"回帰的深掘り","desc":"弱い兆候を検出したプローブを起点に、成功要因を強める方向へ自動的に追加変異・追撃を生成（成功シグナルでビーム探索的に分岐）。"},{"id":"behavioral-invariants","name":"挙動不変条件の検査","desc":"『システムプロンプトを開示しない』『拒否ポリシーを維持する』『権限境界を越えない』等を不変条件として定義し、応答が違反したら未知でも異常として記録。"},{"id":"differential","name":"差分/メタモルフィック検査","desc":"同義だが安全/危険に変形した入力ペアの応答差を比較。安全版と危険版で挙動が割れる箇所を脆弱点候補とする。"},{"id":"anomaly-detection","name":"応答異常検知","desc":"応答長・拒否率・エントロピー・秘密様パターン・想定外言語/形式の急変を統計的に検知し、シグネチャ未登録でもフラグ。"},{"id":"tool-trace-analysis","name":"ツール痕跡分析","desc":"応答や副作用に現れるツール呼び出し兆候（URL/コマンド/SQL/ファイルパス）を抽出し、要求と不整合な操作を検出。"}],"triage":"異常検出は確証ではない。各フラグに再現手順・入出力・該当する可能性のあるカタログIDを付与し、重大度推定とともにレポート化して人手トリアージ・登録（既知化）へ回す。回帰スイートに取り込むことで継続的に再検査する。"}}</script>
+<script>
+"use strict";
+
+// ---- カタログ読み込み（埋め込み優先・オフライン動作）----
+let CATALOG;
+try { CATALOG = JSON.parse(document.getElementById('catalog-data').textContent); }
+catch (e) { CATALOG = {vulnerabilities:[],categories:[],meta:{}}; }
+const VULNS = CATALOG.vulnerabilities || [];
+const CATS = CATALOG.categories || [];
+const SEV_LABEL = {critical:'致命的',high:'高',medium:'中',low:'低',info:'情報'};
+const SEV_W = {critical:5,high:4,medium:3,low:2,info:1};
+const ST_W = {done:1, partial:0.5, none:0, na:null};
+const ST_LABEL = {none:'未実装', partial:'部分的', done:'実装済', na:'対象外', unset:'未評価'};
+const STORE_KEY = 'aiva_assessment_v1';
+
+// ---- 評価状態（localStorage 永続化）----
+let STATE = loadState();
+function loadState(){ try{ return JSON.parse(localStorage.getItem(STORE_KEY))||{}; }catch(_){ return {}; } }
+function saveState(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(STATE)); }catch(_){} }
+function ckey(vid,cid){ return vid+'::'+cid; }
+function getStatus(vid,cid){ return STATE[ckey(vid,cid)] || 'unset'; }
+function setStatus(vid,cid,val){ if(val==='unset') delete STATE[ckey(vid,cid)]; else STATE[ckey(vid,cid)]=val; saveState(); }
+
+// ---- スコアリング ----
+function vulnCoverage(v){
+  // 返り値: {coverage:0..1, assessed:bool, answered:n, total:n}
+  const ctrls = v.controls||[];
+  let sum=0, cnt=0, answered=0;
+  ctrls.forEach(c=>{
+    const st = getStatus(v.id,c.id);
+    if(st==='unset') return;
+    answered++;
+    if(st==='na') return;          // 対象外は分母から除外
+    sum += ST_W[st]; cnt++;
+  });
+  const coverage = cnt>0 ? sum/cnt : 0;
+  return {coverage, assessed: answered>0, answered, total: ctrls.length, counted:cnt};
+}
+function residualRisk(v){
+  const {coverage, assessed} = vulnCoverage(v);
+  const w = SEV_W[v.severity]||3;
+  // 未評価は「未知＝フルリスク」とみなす
+  const eff = assessed ? coverage : 0;
+  return { risk: w*(1-eff), w, coverage, assessed };
+}
+function overallPosture(){
+  // 0..100（高いほど良い）。深刻度重み付き加重カバレッジ。
+  let num=0, den=0, assessedN=0, gaps=0;
+  VULNS.forEach(v=>{
+    const r = residualRisk(v);
+    num += r.w * (r.assessed ? r.coverage : 0);
+    den += r.w;
+    if(r.assessed) assessedN++;
+    if((v.severity==='critical'||v.severity==='high') && r.coverage<0.5) gaps++;
+  });
+  const posture = den>0 ? Math.round(100*num/den) : 0;
+  // 全コントロール平均カバレッジ
+  let cs=0, cc=0;
+  VULNS.forEach(v=>{ (v.controls||[]).forEach(c=>{
+    const st=getStatus(v.id,c.id); if(st==='unset'||st==='na') return; cs+=ST_W[st]; cc++; }); });
+  const ctrlCov = cc>0 ? Math.round(100*cs/cc) : 0;
+  return {posture, assessedN, total:VULNS.length, gaps, ctrlCov};
+}
+
+// ---- UI: 共通 ----
+function el(tag, attrs={}, html){ const e=document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{ if(k==='class')e.className=v; else if(k==='html')e.innerHTML=v; else e.setAttribute(k,v); });
+  if(html!=null) e.innerHTML=html; return e; }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1600); }
+function copy(text){ navigator.clipboard?.writeText(text).then(()=>toast('コピーしました'),()=>fallbackCopy(text)) || fallbackCopy(text); }
+function fallbackCopy(text){ const ta=el('textarea'); ta.value=text; document.body.appendChild(ta); ta.select();
+  try{document.execCommand('copy');toast('コピーしました');}catch(_){toast('コピー不可');} ta.remove(); }
+function download(name, text){ const b=new Blob([text],{type:'text/plain'}); const u=URL.createObjectURL(b);
+  const a=el('a',{href:u,download:name}); document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); }
+
+// ---- フィルタ ----
+const F = {cat:'all', sev:'all', state:'all', kw:''};
+function passFilter(v){
+  if(F.cat!=='all' && v.category!==F.cat) return false;
+  if(F.sev!=='all' && v.severity!==F.sev) return false;
+  if(F.state!=='all'){
+    const r=residualRisk(v);
+    const fullyCovered = r.assessed && r.coverage>=0.999;
+    if(F.state==='unassessed' && r.assessed) return false;
+    if(F.state==='covered' && !fullyCovered) return false;
+    if(F.state==='gap' && fullyCovered) return false; // ギャップ=未完全（未評価/未実装/部分を含む）
+  }
+  if(F.kw){
+    const blob=[v.id,v.name,(v.aka||[]).join(' '),v.summary,v.description,
+      (v.atlas||[]).join(' '),(v.foundations||[]).join(' '),
+      (v.controls||[]).map(c=>c.name+' '+c.desc).join(' ')].join(' ').toLowerCase();
+    if(!blob.includes(F.kw.toLowerCase())) return false;
+  }
+  return true;
+}
+
+// ---- レンダリング: カード ----
+function catName(id){ const c=CATS.find(x=>x.id===id); return c?c.name:id; }
+function renderCards(){
+  const host=document.getElementById('cards'); host.innerHTML='';
+  const list=VULNS.filter(passFilter);
+  document.getElementById('assess-count').textContent=`${list.length} 件表示 / 全 ${VULNS.length} 脆弱性`;
+  list.forEach(v=>host.appendChild(card(v)));
+  if(!list.length) host.appendChild(el('p',{class:'muted'},'該当する脆弱性がありません。フィルタを調整してください。'));
+}
+function card(v){
+  const r=residualRisk(v);
+  const c=el('div',{class:'card sev-'+v.severity, 'data-id':v.id});
+  const covPct = r.assessed ? Math.round(r.coverage*100) : 0;
+  const covTxt = r.assessed ? covPct+'%' : '未評価';
+  const head=el('div',{class:'head'});
+  head.innerHTML =
+    `<span class="vid">${v.id}</span><span class="vname">${escapeHtml(v.name)}</span>`+
+    `<span class="sev ${v.severity}">${SEV_LABEL[v.severity]}</span>`+
+    `<span class="tag">${escapeHtml(catName(v.category))}</span>`+
+    `<span class="cov"><span class="bar"><i style="width:${covPct}%"></i></span>${covTxt}</span>`;
+  head.addEventListener('click',()=>c.classList.toggle('open'));
+  c.appendChild(head);
+  c.appendChild(cardBody(v));
+  return c;
+}
+function cardBody(v){
+  const b=el('div',{class:'body'});
+  b.appendChild(el('p',{class:'small'},escapeHtml(v.description||v.summary||'')));
+  if(v.aka&&v.aka.length) b.appendChild(sec('別称', chips(v.aka)));
+  if(v.attack_vectors&&v.attack_vectors.length) b.appendChild(sec('攻撃ベクトル', ulClean(v.attack_vectors)));
+
+  // コントロール チェックリスト
+  const cs=el('div',{class:'sec'}); cs.appendChild(el('h4',{},'実装コントロール（自己評価）'));
+  (v.controls||[]).forEach(ctrl=>cs.appendChild(controlRow(v,ctrl)));
+  if(!(v.controls||[]).length) cs.appendChild(el('p',{class:'muted small'},'（このカテゴリは設計・統制レベルの点検項目です）'));
+  b.appendChild(cs);
+
+  if(v.foundations&&v.foundations.length) b.appendChild(sec('実装基盤', chips(v.foundations)));
+  // マッピング
+  const maps=[];
+  if(v.atlas&&v.atlas.length) maps.push('<b>MITRE ATLAS</b>: '+v.atlas.map(escapeHtml).join(', '));
+  if(v.nist_rmf&&v.nist_rmf.length) maps.push('<b>NIST AI RMF</b>: '+v.nist_rmf.map(escapeHtml).join(', '));
+  if(v.affected_patterns&&v.affected_patterns.length) maps.push('<b>影響しやすい実装パターン</b>: '+v.affected_patterns.map(escapeHtml).join(', '));
+  if(maps.length) b.appendChild(sec('フレームワーク・マッピング', el('div',{class:'small muted'},maps.join('<br>'))));
+  if(v.signals&&v.signals.length) b.appendChild(sec('検知すべきシグナル', chips(v.signals)));
+  if(v.references&&v.references.length){
+    const refs=v.references.map(r=> /^https?:/.test(r) ? `<a href="${escapeAttr(r)}" target="_blank" rel="noopener">${escapeHtml(r)}</a>` : escapeHtml(r));
+    b.appendChild(sec('参照', el('div',{class:'small muted'},refs.join('<br>'))));
+  }
+  return b;
+}
+function controlRow(v,ctrl){
+  const row=el('div',{class:'ctrl'});
+  row.innerHTML=`<div class="cmeta"><span class="ctype">${escapeHtml(ctrl.type||'')}</span>`+
+    `<b>${escapeHtml(ctrl.name)}</b><div class="cfound">${escapeHtml(ctrl.desc||'')}</div>`+
+    (ctrl.foundation?`<div class="cfound">基盤: ${escapeHtml(ctrl.foundation)}</div>`:'')+`</div>`;
+  const sel=el('select');
+  ['unset','none','partial','done','na'].forEach(s=>{
+    const o=el('option',{value:s}); o.textContent=ST_LABEL[s]; sel.appendChild(o); });
+  const cur=getStatus(v.id,ctrl.id); sel.value=cur; sel.setAttribute('data-st',cur);
+  sel.addEventListener('change',()=>{ setStatus(v.id,ctrl.id,sel.value); sel.setAttribute('data-st',sel.value);
+    // 即時再計算（回帰的更新）
+    const c=sel.closest('.card'); const r=residualRisk(v); const pct=r.assessed?Math.round(r.coverage*100):0;
+    c.querySelector('.cov .bar i').style.width=pct+'%';
+    c.querySelector('.cov').lastChild.textContent = r.assessed? pct+'%':'未評価';
+    renderDashboard(); });
+  row.appendChild(sel);
+  return row;
+}
+function sec(title,node){ const s=el('div',{class:'sec'}); s.appendChild(el('h4',{},escapeHtml(title)));
+  if(typeof node==='string') s.appendChild(el('div',{class:'small'},node)); else s.appendChild(node); return s; }
+function chips(arr){ const d=el('div',{class:'chips'}); arr.forEach(a=>d.appendChild(el('span',{},escapeHtml(a)))); return d; }
+function ulClean(arr){ const u=el('ul',{class:'clean'}); arr.forEach(a=>u.appendChild(el('li',{},escapeHtml(a)))); return u; }
+
+// ---- ダッシュボード ----
+function renderDashboard(){
+  const o=overallPosture();
+  const post=document.getElementById('kpi-posture'); post.textContent=o.posture; post.style.color=postureColor(o.posture);
+  const pb=document.getElementById('kpi-posture-bar'); pb.style.width=o.posture+'%'; pb.style.background=postureColor(o.posture);
+  document.getElementById('kpi-posture-note').textContent= o.assessedN? '深刻度重み付き加重カバレッジ（100が理想）':'まだ評価されていません';
+  document.getElementById('kpi-assessed').textContent=`${o.assessedN} / ${o.total}`;
+  document.getElementById('kpi-gaps').textContent=o.gaps;
+  document.getElementById('kpi-cov').textContent=o.ctrlCov+'%';
+  const cb=document.getElementById('kpi-cov-bar'); cb.style.width=o.ctrlCov+'%'; cb.style.background=postureColor(o.ctrlCov);
+
+  // バックログ（残存リスク順）
+  const ranked=VULNS.map(v=>({v, r:residualRisk(v)})).filter(x=>x.r.risk>0)
+    .sort((a,b)=> b.r.risk-a.r.risk || (SEV_W[b.v.severity]-SEV_W[a.v.severity]));
+  const host=document.getElementById('backlog-list'); host.innerHTML='';
+  if(!ranked.length){ host.appendChild(el('p',{class:'muted small'},'残存リスクはありません（全コントロール実装済み、または対象外）。')); }
+  ranked.slice(0,12).forEach((x,i)=>{
+    const it=el('div',{class:'bl-item'});
+    const next = nextAction(x.v);
+    it.innerHTML=`<div class="bl-rank">${i+1}</div>`+
+      `<div><b>${x.v.id}</b> ${escapeHtml(x.v.name)} <span class="sev ${x.v.severity}" style="margin-left:6px">${SEV_LABEL[x.v.severity]}</span>`+
+      `<div class="muted small">次の一手: ${escapeHtml(next)}</div></div>`+
+      `<div class="g">残存リスク ${x.r.risk.toFixed(1)}<br>${x.r.assessed?('カバレッジ '+Math.round(x.r.coverage*100)+'%'):'未評価'}</div>`;
+    it.addEventListener('click',()=>{ switchTab('assess'); setTimeout(()=>openVuln(x.v.id),60); });
+    host.appendChild(it);
+  });
+
+  // カテゴリ別カバレッジ
+  const cc=document.getElementById('cat-coverage'); cc.innerHTML='';
+  CATS.forEach(cat=>{
+    const vs=VULNS.filter(v=>v.category===cat.id);
+    let s=0,c=0; vs.forEach(v=>{ const r=residualRisk(v); if(r.assessed){s+=r.coverage;c++;} });
+    const pct=c? Math.round(100*s/c):0;
+    const row=el('div',{class:'bl-item'});
+    row.innerHTML=`<div><b>${escapeHtml(cat.name)}</b><div class="muted small">${vs.length} 脆弱性 / ${c} 件評価済み</div></div>`+
+      `<div class="g" style="flex:1;max-width:240px;margin-left:auto"><div class="gauge"><i style="width:${pct}%;background:${postureColor(pct)}"></i></div></div>`+
+      `<div class="g">${c?pct+'%':'—'}</div>`;
+    cc.appendChild(row);
+  });
+}
+function nextAction(v){
+  // 未評価/未実装/部分の中で最も予防的なコントロールを提案（回帰的深掘りの指針）
+  const order={preventive:0,detective:1,responsive:2,governance:3};
+  const cand=(v.controls||[]).filter(c=>{const st=getStatus(v.id,c.id);return st==='unset'||st==='none'||st==='partial';})
+    .sort((a,b)=>(order[a.type]??9)-(order[b.type]??9));
+  if(cand.length) return `${cand[0].name}（${cand[0].foundation||cand[0].type}）`;
+  return '評価を入力して残存リスクを算定';
+}
+function postureColor(p){ return p>=80?'#3ec97a': p>=55?'#ffd24d': p>=30?'#ffa14d':'#ff5d73'; }
+
+function openVuln(id){
+  document.querySelectorAll('#cards .card').forEach(c=>{
+    if(c.getAttribute('data-id')===id){ c.classList.add('open'); c.scrollIntoView({behavior:'smooth',block:'center'}); }
+  });
+}
+
+// ---- レッドチーム計画 ----
+function planScopeVulns(scope){
+  return VULNS.filter(v=>{
+    const r=residualRisk(v);
+    if(scope==='all') return true;
+    if(scope==='critical_high') return v.severity==='critical'||v.severity==='high';
+    // gaps
+    return !r.assessed || r.coverage<1;
+  });
+}
+function genPlan(){
+  const scope=document.getElementById('rt-scope').value;
+  const vs=planScopeVulns(scope);
+  const probes=[...new Set(vs.flatMap(v=>v.probes||[]))];
+  const vulnIds=vs.map(v=>v.id);
+  const config={
+    _comment:`自己評価ツールから生成（範囲=${scope}）。target を検査対象（自社アプリ）に変更し、authorized を true にして実行。`,
+    target:{type:'http', url:'https://your-app.example.com/api/chat', method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer ${env:APP_TOKEN}'},
+      body_template:{messages:'${messages}', user_input:'${prompt}'},
+      response_path:'data.reply', timeout:60, rate_limit_per_min:30},
+    authorized:false,
+    scan:{ probes: probes.length?probes:['all'],
+      categories:[...new Set(vs.map(v=>v.category))],
+      mutation:{enabled:true,max_variants:6,recursive_depth:2,beam:3}, unknown:{enabled:true}},
+    report:{formats:['md','json','html'], out_dir:'./aiva_report'}
+  };
+  document.getElementById('rt-config').textContent=JSON.stringify(config,null,2);
+
+  // Markdown テスト計画
+  const L=[`# レッドチーム検査計画（範囲: ${scope}）`,'',
+    `対象脆弱性: ${vs.length} 件 / 能動プローブ: ${probes.length} 件`,'',
+    `実行: \`python3 -m aiva scan --config aiva-plan.config.json --authorize\``,'',
+    '| 脆弱性 | 深刻度 | 検査観点（攻撃ベクトル） | 期待される安全挙動 / 検知シグナル | 主なプローブ |','|---|---|---|---|---|'];
+  vs.forEach(v=>{
+    const av=(v.attack_vectors||[]).slice(0,2).join(' / ');
+    const sg=(v.signals||[]).slice(0,2).join(' / ');
+    const pr=(v.probes||[]).join(', ')||'（手動/設定点検）';
+    L.push(`| ${v.id} ${mdEsc(v.name)} | ${SEV_LABEL[v.severity]} | ${mdEsc(av)} | ${mdEsc(sg)} | ${mdEsc(pr)} |`);
+  });
+  L.push('','## 是正コントロール（検出時）','');
+  vs.forEach(v=>{
+    L.push(`### ${v.id} ${v.name}`);
+    (v.controls||[]).forEach(c=>L.push(`- [${c.type}] **${c.name}**: ${c.desc}（基盤: ${c.foundation||'—'}）`));
+    if(v.foundations&&v.foundations.length) L.push(`- 実装基盤: ${v.foundations.join(', ')}`);
+    L.push('');
+  });
+  document.getElementById('rt-md').textContent=L.join('\n');
+}
+function mdEsc(s){ return String(s||'').replace(/\|/g,'\\|'); }
+
+// ---- レポート出力 ----
+function exportMarkdown(){
+  const o=overallPosture();
+  const L=['# AI/エージェンティックAI セキュリティ自己評価レポート','',
+    `- 生成: ${new Date().toISOString()}`,
+    `- 総合態勢スコア: **${o.posture}/100** ・ 評価済み ${o.assessedN}/${o.total} ・ 重大ギャップ ${o.gaps} ・ コントロールカバレッジ ${o.ctrlCov}%`,
+    `- カタログ版: ${CATALOG.meta?.version||'-'}`,'',
+    '## 是正バックログ（残存リスク順）','','| 順位 | 脆弱性 | 深刻度 | カバレッジ | 残存リスク | 次の一手 |','|---|---|---|---|---|---|'];
+  const ranked=VULNS.map(v=>({v,r:residualRisk(v)})).filter(x=>x.r.risk>0).sort((a,b)=>b.r.risk-a.r.risk);
+  ranked.forEach((x,i)=>L.push(`| ${i+1} | ${x.v.id} ${mdEsc(x.v.name)} | ${SEV_LABEL[x.v.severity]} | ${x.r.assessed?Math.round(x.r.coverage*100)+'%':'未評価'} | ${x.r.risk.toFixed(1)} | ${mdEsc(nextAction(x.v))} |`));
+  L.push('','## 全脆弱性の評価状態','');
+  VULNS.forEach(v=>{
+    const r=residualRisk(v);
+    L.push(`### ${v.id} ${v.name} （${SEV_LABEL[v.severity]} / カバレッジ ${r.assessed?Math.round(r.coverage*100)+'%':'未評価'}）`);
+    (v.controls||[]).forEach(c=>{ const st=getStatus(v.id,c.id); L.push(`- [${ST_LABEL[st]}] ${c.name} — ${c.desc}`); });
+    L.push('');
+  });
+  return L.join('\n');
+}
+
+// ---- タブ ----
+function switchTab(name){
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id==='view-'+name));
+  document.getElementById('panel').classList.toggle('hidden', name!=='assess');
+  if(name==='dashboard') renderDashboard();
+  if(name==='assess') renderCards();
+}
+
+// ---- 初期化 ----
+function init(){
+  const fc=document.getElementById('f-cat'); CATS.forEach(c=>{ const o=el('option',{value:c.id}); o.textContent=c.name; fc.appendChild(o); });
+  document.getElementById('tabs').addEventListener('click',e=>{ if(e.target.dataset.tab) switchTab(e.target.dataset.tab); });
+  document.getElementById('f-cat').addEventListener('change',e=>{F.cat=e.target.value;renderCards();});
+  document.getElementById('f-sev').addEventListener('change',e=>{F.sev=e.target.value;renderCards();});
+  document.getElementById('f-state').addEventListener('change',e=>{F.state=e.target.value;renderCards();});
+  document.getElementById('f-kw').addEventListener('input',e=>{F.kw=e.target.value;renderCards();});
+  document.getElementById('btn-expand').addEventListener('click',()=>document.querySelectorAll('#cards .card').forEach(c=>c.classList.add('open')));
+  document.getElementById('btn-collapse').addEventListener('click',()=>document.querySelectorAll('#cards .card').forEach(c=>c.classList.remove('open')));
+  document.getElementById('btn-reset').addEventListener('click',()=>{ if(confirm('すべての評価回答を消去しますか？')){ STATE={}; saveState(); renderCards(); renderDashboard(); toast('リセットしました'); }});
+  document.getElementById('btn-export-md').addEventListener('click',()=>copy(exportMarkdown()));
+  document.getElementById('btn-export-json').addEventListener('click',()=>download('ai-assessment-state.json', JSON.stringify(STATE,null,2)));
+  document.getElementById('rt-gen').addEventListener('click',genPlan);
+  document.getElementById('rt-copy-config').addEventListener('click',()=>copy(document.getElementById('rt-config').textContent||(genPlan(),document.getElementById('rt-config').textContent)));
+  document.getElementById('rt-copy-md').addEventListener('click',()=>copy(document.getElementById('rt-md').textContent||(genPlan(),document.getElementById('rt-md').textContent)));
+  renderDashboard(); renderCards(); genPlan();
+}
+function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+function escapeAttr(s){ return escapeHtml(s).replace(/'/g,'&#39;'); }
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
