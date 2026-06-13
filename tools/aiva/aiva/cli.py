@@ -100,12 +100,28 @@ def cmd_tools(args) -> int:
     return 0
 
 
+def cmd_audit(args) -> int:
+    import json as _json
+    from .audit import load_arch, analyze as audit_analyze, render_markdown as audit_md
+    catalog = Catalog.load(args.catalog)
+    implemented = load_arch(args.arch)
+    model = audit_analyze(catalog, implemented)
+    if args.format == "json":
+        print(_json.dumps(model, ensure_ascii=False, indent=2))
+    else:
+        print(audit_md(model))
+    c = model["counts"]
+    return 1 if c["missing"] else 0
+
+
 def cmd_coverage(args) -> int:
     import json as _json
     from .coverage import analyze, render_markdown
     from .integrations import load_registry
+    from .audit import load_arch
     catalog = Catalog.load(args.catalog)
-    model = analyze(catalog, only_available=args.only_available)
+    arch_controls = load_arch(args.arch) if getattr(args, "arch", None) else None
+    model = analyze(catalog, only_available=args.only_available, arch_controls=arch_controls)
     if args.format == "json":
         print(_json.dumps(model, ensure_ascii=False, indent=2))
     else:
@@ -266,7 +282,14 @@ def build_parser() -> argparse.ArgumentParser:
     cv.add_argument("--format", choices=["md", "json"], default="md")
     cv.add_argument("--only-available", action="store_true",
                     help="導入済みツールのみで集計（既定はレジストリ全ツールの潜在カバレッジ）")
+    cv.add_argument("--arch", help="アーキ記述JSON（実装済みコントロール）を設定監査として加味")
     cv.set_defaults(func=cmd_coverage)
+
+    au = sub.add_parser("audit", help="アーキ記述(実装コントロール)を監査し被覆を算定")
+    au.add_argument("--arch", required=True, help="アーキ記述JSON（implemented_controls）")
+    au.add_argument("--catalog", help="脆弱性カタログJSON")
+    au.add_argument("--format", choices=["md", "json"], default="md")
+    au.set_defaults(func=cmd_audit)
 
     rt = sub.add_parser("run-tool", help="外部ツールを実行/レポート取込しカタログ所見へ正規化（garak/mcp-scan）")
     rt.add_argument("tool", help="ツールID（例: garak, mcp-scan）")

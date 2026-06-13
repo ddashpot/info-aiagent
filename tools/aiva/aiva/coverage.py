@@ -16,8 +16,10 @@ from .integrations import load_registry, tool_availability
 from .probes import load_probes
 
 
-def analyze(catalog: Catalog = None, *, only_available: bool = False) -> Dict[str, Any]:
+def analyze(catalog: Catalog = None, *, only_available: bool = False,
+            arch_controls=None) -> Dict[str, Any]:
     catalog = catalog or Catalog.load()
+    arch_controls = set(arch_controls or [])
     probes = load_probes()
     registry = load_registry()
     avail = tool_availability(registry)
@@ -38,24 +40,27 @@ def analyze(catalog: Catalog = None, *, only_available: bool = False) -> Dict[st
             tools_by_vuln.setdefault(vid, []).append(t["id"])
 
     rows = []
-    counts = {"active": 0, "tool": 0, "passive": 0, "gap": 0}
+    counts = {"active": 0, "tool": 0, "audit": 0, "passive": 0, "gap": 0}
     cell_cov: Dict[str, Dict[str, int]] = {}
     for v in catalog.vulns:
         vid = v["id"]
         has_active = active_by_vuln.get(vid, 0) > 0
         tools = sorted(set(tools_by_vuln.get(vid, [])))
         has_passive = passive_by_vuln.get(vid, 0) > 0
+        impl_ctrls = [c["id"] for c in v.get("controls", []) if c["id"] in arch_controls]
         if has_active:
             status = "active"        # 能動検査でカバー
         elif tools:
             status = "tool"          # 外部ツールでカバー
+        elif impl_ctrls:
+            status = "audit"         # 設定監査でコントロール実装を確認
         elif has_passive:
             status = "passive"       # 受動点検のみ
         else:
             status = "gap"           # 未カバー
         counts[status] += 1
         cell = f"{v['surface']}×{v['failure_mode']}"
-        cc = cell_cov.setdefault(cell, {"active": 0, "tool": 0, "passive": 0, "gap": 0})
+        cc = cell_cov.setdefault(cell, {"active": 0, "tool": 0, "audit": 0, "passive": 0, "gap": 0})
         cc[status] += 1
         rows.append({
             "id": vid, "name": v["name"], "severity": v.get("severity"),
@@ -81,7 +86,7 @@ def analyze(catalog: Catalog = None, *, only_available: bool = False) -> Dict[st
 
 _STATUS_LABEL = {
     "active": "能動検査でカバー", "tool": "外部ツールでカバー",
-    "passive": "受動点検のみ", "gap": "未カバー(要対応)",
+    "audit": "設定監査でカバー", "passive": "受動点検のみ", "gap": "未カバー(要対応)",
 }
 
 
@@ -92,13 +97,13 @@ def render_markdown(model: Dict[str, Any], registry: Dict[str, Any] = None) -> s
     L = ["# AIセキュリティ 網羅性(カバレッジ)レポート", "",
          f"- 母集合: カタログ脆弱性 {model['total']} 件"
          + ("（導入済みツールのみ集計）" if model["only_available"] else "（レジストリの全ツールで集計）"),
-         f"- 能動検査でカバー: **{c['active']}** / 外部ツールでカバー: **{c['tool']}** / 受動点検のみ: {c['passive']} / **未カバー: {c['gap']}**",
+         f"- 能動検査: **{c['active']}** / 外部ツール: **{c['tool']}** / 設定監査: {c.get('audit',0)} / 受動点検のみ: {c['passive']} / **未カバー: {c['gap']}**",
          f"- 何らかの手段で対応可能: **{model['active_or_passive_or_tool_pct']}%** "
-         f"（うち自動検査={model['covered_pct']}%）", "",
+         f"（うち能動自動検査={model['covered_pct']}%）", "",
          "## 脆弱性別カバレッジ", "",
          "| 脆弱性 | サーフェス×失敗モード | 状態 | aiva | 外部ツール |",
          "|---|---|---|---|---|"]
-    order = {"gap": 0, "passive": 1, "tool": 2, "active": 3}
+    order = {"gap": 0, "passive": 1, "audit": 2, "tool": 3, "active": 4}
     for r in sorted(model["rows"], key=lambda x: (order[x["status"]], x["id"])):
         tools = ", ".join(tool_name.get(t, t) for t in r["tools"]) or "—"
         native = (f"能動×{r['native_active']}" if r["native_active"]

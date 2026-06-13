@@ -256,6 +256,35 @@ class TestSemiActiveDetectors(unittest.TestCase):
         self.assertIn(by_id["hitl_flood"].status, ("vulnerable", "weak"))
 
 
+class TestAuditCoverage(unittest.TestCase):
+    ARCH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "examples", "architecture.example.json")
+
+    def test_audit_analyze(self):
+        from aiva.audit import load_arch, analyze
+        cat = Catalog.load()
+        impl = load_arch(self.ARCH)
+        m = analyze(cat, impl)
+        self.assertEqual(sum(m["counts"].values()), m["total"])
+        self.assertGreater(m["counts"]["ok"] + m["counts"]["partial"], 0)
+
+    def test_coverage_full_with_arch(self):
+        from aiva.audit import load_arch
+        from aiva.coverage import analyze
+        impl = load_arch(self.ARCH)
+        m = analyze(arch_controls=impl)
+        self.assertEqual(m["counts"]["gap"], 0)
+        self.assertEqual(m["counts"]["passive"], 0, "arch監査で観測性系もカバーされるべき")
+        self.assertGreaterEqual(m["counts"]["active"], 18)
+
+    def test_coverage_default_observability_passive(self):
+        from aiva.coverage import analyze
+        m = analyze()
+        passive_ids = {r["id"] for r in m["rows"] if r["status"] == "passive"}
+        # 既定(arch無し)では観測性/追跡性は受動のまま
+        self.assertTrue({"ASI-T08", "INF-03"} & passive_ids or m["counts"]["passive"] == 0)
+
+
 class TestIntegrationAdapters(unittest.TestCase):
     FX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
