@@ -59,6 +59,29 @@ python3 -m aiva scan --config examples/config.http.example.json --authorize
 | `aiva list-oracles` | 判定オラクルクラスと検出器の対応（MECE） |
 | `aiva collect` | コレクタで新たな脅威を収集し `threat_intake/` へ投入（既定は外部接続なし） |
 | `aiva ingest` | `threat_intake/` の脅威をプローブ／カタログへ反映（`--write`）/ 反映済みか検証（既定・CIゲート） |
+| `aiva tools` | 統合可能な外部セキュリティツールと導入状況 |
+| `aiva coverage` | 網羅性(カバレッジ)とギャップを算定（`--format md|json` `--only-available`） |
+
+## 外部ツール統合と網羅性（garak / PyRIT ほかの組合せ）
+
+aiva は単独ですべてを賄うのではなく、確立されたツールを**MECE背骨へ正規化して組み合わせる**。
+`tool_registry.json` が各ツールの担当範囲（covers＝カタログ脆弱性ID）を宣言し、`aiva coverage` が
+「どのセルをどの手段が埋めるか／空白はどこか」を算定する。
+
+```bash
+aiva tools                 # 統合対象ツールと導入状況（garak/PyRIT/Semgrep/Trivy/gitleaks/ZAP/mcp-scan…）
+aiva coverage              # 網羅性レポート（脆弱性別＋ギャップ＋ツール導入状況）
+aiva coverage --only-available   # 実際に導入済みのツールのみで集計
+```
+
+統合ツール（抜粋）: **LLMレッドチーム** garak / PyRIT / Giskard / promptfoo / DeepTeam・**SAST** Semgrep / Bandit / CodeQL・
+**SCA/SBOM** Trivy / Grype / Syft・**シークレット** gitleaks / TruffleHog・**DAST** OWASP ZAP / Nuclei・
+**MCP/エージェント** mcp-scan / Agentic Radar・**敵対的ML** ART / Counterfit / TextAttack・**基盤姿勢** Nmap / Checkov / Prowler / kube-bench。
+garak はレポート(JSONL)を `integrations.py` の `GarakIntegration` で正規化して取り込める。
+
+> ⚠️ **網羅性の現実**: 自動検査で約7割。残りの **orchestration / 可観測性 / マルチエージェント統制系**
+> （カスケード幻覚・HITL過負荷・不正エージェント・追跡不能 等）は既製ツールが存在せず、設計・運用統制
+> （HTML自己評価）と人手レッドチームで対応する。`aiva coverage` がこの空白を明示する。
 
 ## MECE設計（分類・手法・機能）
 

@@ -190,5 +190,49 @@ class TestIntake(unittest.TestCase):
         self.assertEqual(pending, 0, "threat_intake が probes.json に未反映")
 
 
+class TestToolRegistry(unittest.TestCase):
+    def test_covers_ids_exist_in_catalog(self):
+        from aiva.integrations import load_registry
+        cat = Catalog.load()
+        ids = {v["id"] for v in cat.vulns}
+        reg = load_registry()
+        self.assertGreaterEqual(len(reg["tools"]), 15)
+        for t in reg["tools"]:
+            for vid in t.get("covers", []):
+                self.assertIn(vid, ids, f"{t['id']} covers 未知の脆弱性 {vid}")
+
+    def test_defenses_implement_real_controls(self):
+        from aiva.integrations import load_registry
+        cat = Catalog.load()
+        ctrl_ids = {c["id"] for v in cat.vulns for c in v.get("controls", [])}
+        reg = load_registry()
+        for d in reg.get("defenses", []):
+            for cid in d.get("implements", []):
+                self.assertIn(cid, ctrl_ids, f"{d['id']} implements 未知のコントロール {cid}")
+
+    def test_availability_detection_runs(self):
+        from aiva.integrations import tool_availability
+        avail = tool_availability()
+        self.assertTrue(all(isinstance(v, bool) for v in avail.values()))
+
+
+class TestCoverage(unittest.TestCase):
+    def test_no_hard_gaps_and_counts_consistent(self):
+        from aiva.coverage import analyze
+        m = analyze()
+        c = m["counts"]
+        self.assertEqual(sum(c.values()), m["total"])
+        # 全脆弱性が最低でも受動/ツール/能動のいずれかでカバー
+        self.assertEqual(c["gap"], 0, "未カバーの脆弱性が残っている")
+        self.assertGreaterEqual(c["active"], 10)
+
+    def test_only_available_is_subset(self):
+        from aiva.coverage import analyze
+        full = analyze(only_available=False)["counts"]
+        avail = analyze(only_available=True)["counts"]
+        # 導入済みのみ集計は、ツールカバー数が全集計以下
+        self.assertLessEqual(avail["tool"], full["tool"])
+
+
 if __name__ == "__main__":
     unittest.main()
