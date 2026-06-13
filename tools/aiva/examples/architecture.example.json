@@ -1,0 +1,21 @@
+{
+  "_comment": "対象アプリ/エージェント基盤で実装済みのコントロールID（カタログの controls[].id）を列挙する。aiva audit / aiva coverage --arch で被覆を自動検証し、ブラックボックス検査できない設計・運用統制（監査証跡・トレーシング・委任境界・エージェント登録 等）を網羅性に反映する。",
+  "implemented_controls": [
+    "c-audit-trail",
+    "c-attribution",
+    "c-tracing",
+    "c-eval-harness",
+    "c-agent-registry",
+    "c-behavior-monitor",
+    "c-trust-boundary",
+    "c-system-redteam",
+    "c-agent-identity",
+    "c-strong-authn",
+    "c-vault",
+    "c-egress-policy",
+    "c-quota-budget",
+    "c-loop-guard",
+    "c-action-approval",
+    "c-hitl-context"
+  ]
+}

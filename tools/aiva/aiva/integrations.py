@@ -14,6 +14,8 @@ import importlib.util
 import json
 import os
 import shutil
+import subprocess
+import tempfile
 from typing import Any, Callable, Dict, List, Optional
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -80,6 +82,27 @@ class GarakIntegration(Integration):
         "promptleak": "LLM07", "grandma": "LLM01", "malwaregen": "LLM05",
     }
 
+    def run(self, target_cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """garak を subprocess 実行し、レポート(JSONL)をパースして返す。
+
+        target_cfg: { model_type, model_name, probes:[...], generations, timeout }
+        garak 未導入時は RuntimeError。
+        """
+        if not self.available():
+            raise RuntimeError("garak 未導入: pipx install garak")
+        mt = target_cfg.get("model_type", "openai")
+        mn = target_cfg.get("model_name", "gpt-4o-mini")
+        probes = target_cfg.get("probes") or ["promptinject", "dan", "leakreplay"]
+        tmp = tempfile.mkdtemp(prefix="aiva_garak_")
+        prefix = os.path.join(tmp, "garak")
+        cmd = ["garak", "--model_type", mt, "--model_name", mn,
+               "--probes", ",".join(probes), "--report_prefix", prefix]
+        if target_cfg.get("generations"):
+            cmd += ["--generations", str(target_cfg["generations"])]
+        subprocess.run(cmd, check=False, timeout=target_cfg.get("timeout", 3600))  # noqa: S603
+        report = prefix + ".report.jsonl"
+        return self.parse_report(report) if os.path.isfile(report) else []
+
     def normalize(self, raw: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
         for rec in raw:
@@ -121,9 +144,55 @@ class PyritIntegration(Integration):
             "PyRITのスコアラ結果を normalize() に渡して取り込んでください。")
 
 
+class McpScanIntegration(Integration):
+    """mcp-scan(Invariant Labs) を実行し、結果を MCP-01/MCP-02 へ正規化する。"""
+
+    def run(self, target_cfg: Dict[str, Any]) -> Any:
+        if not self.available():
+            raise RuntimeError("mcp-scan 未導入: pipx install mcp-scan")
+        mcp_config = target_cfg.get("mcp_config")
+        cmd = ["mcp-scan", "scan"] + ([mcp_config] if mcp_config else []) + ["--json"]
+        proc = subprocess.run(cmd, capture_output=True, text=True,  # noqa: S603
+                              timeout=target_cfg.get("timeout", 600))
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            return {}
+
+    def normalize(self, raw: Any) -> List[Dict[str, Any]]:
+        issues: List[Dict[str, Any]] = []
+
+        def walk(o: Any) -> None:
+            if isinstance(o, dict):
+                # issue らしいリーフ（severity か message/type を持つ）
+                if any(k in o for k in ("severity", "message", "type", "label", "issue")):
+                    issues.append(o)
+                for v in o.values():
+                    walk(v)
+            elif isinstance(o, list):
+                for v in o:
+                    walk(v)
+
+        walk(raw)
+        out, seen = [], set()
+        for it in issues:
+            blob = json.dumps(it, ensure_ascii=False)
+            low = blob.lower()
+            vuln = "MCP-02" if any(w in low for w in
+                                   ("permission", "scope", "privilege", "権限", "deputy")) else "MCP-01"
+            ev = (it.get("message") or it.get("label") or it.get("type") or blob)[:200]
+            key = (vuln, ev)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append({"source": "mcp-scan", "vuln": vuln, "evidence": ev})
+        return out
+
+
 _ADAPTERS: Dict[str, Callable[[Dict[str, Any]], Integration]] = {
     "garak": GarakIntegration,
     "pyrit": PyritIntegration,
+    "mcp-scan": McpScanIntegration,
 }
 
 

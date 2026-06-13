@@ -100,12 +100,28 @@ def cmd_tools(args) -> int:
     return 0
 
 
+def cmd_audit(args) -> int:
+    import json as _json
+    from .audit import load_arch, analyze as audit_analyze, render_markdown as audit_md
+    catalog = Catalog.load(args.catalog)
+    implemented = load_arch(args.arch)
+    model = audit_analyze(catalog, implemented)
+    if args.format == "json":
+        print(_json.dumps(model, ensure_ascii=False, indent=2))
+    else:
+        print(audit_md(model))
+    c = model["counts"]
+    return 1 if c["missing"] else 0
+
+
 def cmd_coverage(args) -> int:
     import json as _json
     from .coverage import analyze, render_markdown
     from .integrations import load_registry
+    from .audit import load_arch
     catalog = Catalog.load(args.catalog)
-    model = analyze(catalog, only_available=args.only_available)
+    arch_controls = load_arch(args.arch) if getattr(args, "arch", None) else None
+    model = analyze(catalog, only_available=args.only_available, arch_controls=arch_controls)
     if args.format == "json":
         print(_json.dumps(model, ensure_ascii=False, indent=2))
     else:
@@ -113,6 +129,52 @@ def cmd_coverage(args) -> int:
     c = model["counts"]
     print(f"\n=== 網羅性: 対応可能 {model['active_or_passive_or_tool_pct']}% "
           f"(自動検査 {model['covered_pct']}%) / 未カバー {c['gap']} 件 ===", file=sys.stderr)
+    return 0
+
+
+def cmd_run_tool(args) -> int:
+    import json as _json
+    from .integrations import load_registry, build_integration, GarakIntegration
+    reg = load_registry()
+    spec = next((t for t in reg["tools"] if t["id"] == args.tool), None)
+    if not spec:
+        _eprint(f"未知のツール: {args.tool}（aiva tools で一覧）")
+        return 2
+    integ = build_integration(spec)
+    if integ is None:
+        _eprint(f"{args.tool} は実行アダプタ未対応（covers宣言のみ）。aiva coverage を参照。")
+        return 2
+
+    # 取り込み（既存レポートを正規化）か、実行
+    if args.import_file:
+        if args.tool == "garak":
+            raw = GarakIntegration.parse_report(args.import_file)
+        else:
+            with open(args.import_file, "r", encoding="utf-8") as fh:
+                raw = _json.load(fh)
+        findings = integ.normalize(raw)
+    else:
+        if not integ.available():
+            _eprint(f"{args.tool} 未導入: {spec.get('install','')}  "
+                    f"（既存レポートを取り込むなら --import FILE）")
+            return 2
+        tool_cfg = {}
+        if args.tool_config:
+            with open(args.tool_config, "r", encoding="utf-8") as fh:
+                tool_cfg = _json.load(fh)
+        findings = integ.normalize(integ.run(tool_cfg))
+
+    catalog = Catalog.load(args.catalog)
+    enriched = [{**f, "vuln_name": catalog.name_of(f.get("vuln", "")),
+                 "severity": catalog.severity_of(f.get("vuln", ""))} for f in findings]
+    if args.format == "json":
+        print(_json.dumps(enriched, ensure_ascii=False, indent=2))
+    else:
+        print(f"# {spec['name']} 正規化所見（{len(enriched)} 件 → カタログにマッピング）\n")
+        for f in enriched:
+            print(f"- **{f.get('vuln')} {f['vuln_name']}** ({f['severity']}) "
+                  f"〔{f.get('source')}〕 {str(f.get('evidence',''))[:160]}")
+    print(f"\n{len(enriched)} 件を取り込み。`aiva coverage` で網羅性に反映。", file=sys.stderr)
     return 0
 
 
@@ -220,7 +282,22 @@ def build_parser() -> argparse.ArgumentParser:
     cv.add_argument("--format", choices=["md", "json"], default="md")
     cv.add_argument("--only-available", action="store_true",
                     help="導入済みツールのみで集計（既定はレジストリ全ツールの潜在カバレッジ）")
+    cv.add_argument("--arch", help="アーキ記述JSON（実装済みコントロール）を設定監査として加味")
     cv.set_defaults(func=cmd_coverage)
+
+    au = sub.add_parser("audit", help="アーキ記述(実装コントロール)を監査し被覆を算定")
+    au.add_argument("--arch", required=True, help="アーキ記述JSON（implemented_controls）")
+    au.add_argument("--catalog", help="脆弱性カタログJSON")
+    au.add_argument("--format", choices=["md", "json"], default="md")
+    au.set_defaults(func=cmd_audit)
+
+    rt = sub.add_parser("run-tool", help="外部ツールを実行/レポート取込しカタログ所見へ正規化（garak/mcp-scan）")
+    rt.add_argument("tool", help="ツールID（例: garak, mcp-scan）")
+    rt.add_argument("--import", dest="import_file", help="既存レポートを取り込んで正規化（garak=JSONL / mcp-scan=JSON）")
+    rt.add_argument("--tool-config", help="実行時のツール設定JSON（model_type/probes 等）")
+    rt.add_argument("--catalog", help="脆弱性カタログJSON")
+    rt.add_argument("--format", choices=["md", "json"], default="md")
+    rt.set_defaults(func=cmd_run_tool)
 
     ig = sub.add_parser("ingest", help="threat_intake の脅威を検査(プローブ)へ反映")
     ig.add_argument("--intake-dir", help="インテイク・ディレクトリ（既定: tools/aiva/threat_intake）")

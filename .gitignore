@@ -1,0 +1,4 @@
+aiva_report/
+__pycache__/
+*.pyc
+*.egg-info/

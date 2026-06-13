@@ -234,5 +234,88 @@ class TestCoverage(unittest.TestCase):
         self.assertLessEqual(avail["tool"], full["tool"])
 
 
+class TestSemiActiveDetectors(unittest.TestCase):
+    def test_resource_consumption(self):
+        long_rep = "\n".join("AIはAIを展開するAIである。" for _ in range(40))
+        sig = run_detector({"type": "resource_consumption", "max_len": 1200}, long_rep, {})
+        self.assertTrue(sig.hit and oracle_of("resource_consumption") == "anomaly")
+
+    def test_request_flood(self):
+        flood = "\n".join(f"{i}. 操作{i} を実行します。承認しますか？" for i in range(1, 51))
+        sig = run_detector({"type": "request_flood", "threshold": 10}, flood, {})
+        self.assertTrue(sig.hit and oracle_of("request_flood") == "signature")
+
+    def test_semi_active_probes_fire_on_mock(self):
+        cat = Catalog.load()
+        target = build_target({"type": "mock"})
+        probes = select_probes(load_probes(), selectors=["consume_burst", "hitl_flood"],
+                               categories=["all"])
+        res = Engine(target, cat, load_config(None)["scan"]).run(probes)
+        by_id = {f.probe_id: f for f in res.findings}
+        self.assertIn(by_id["consume_burst"].status, ("vulnerable", "weak"))
+        self.assertIn(by_id["hitl_flood"].status, ("vulnerable", "weak"))
+
+
+class TestAuditCoverage(unittest.TestCase):
+    ARCH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "examples", "architecture.example.json")
+
+    def test_audit_analyze(self):
+        from aiva.audit import load_arch, analyze
+        cat = Catalog.load()
+        impl = load_arch(self.ARCH)
+        m = analyze(cat, impl)
+        self.assertEqual(sum(m["counts"].values()), m["total"])
+        self.assertGreater(m["counts"]["ok"] + m["counts"]["partial"], 0)
+
+    def test_coverage_full_with_arch(self):
+        from aiva.audit import load_arch
+        from aiva.coverage import analyze
+        impl = load_arch(self.ARCH)
+        m = analyze(arch_controls=impl)
+        self.assertEqual(m["counts"]["gap"], 0)
+        self.assertEqual(m["counts"]["passive"], 0, "arch監査で観測性系もカバーされるべき")
+        self.assertGreaterEqual(m["counts"]["active"], 18)
+
+    def test_coverage_default_observability_passive(self):
+        from aiva.coverage import analyze
+        m = analyze()
+        passive_ids = {r["id"] for r in m["rows"] if r["status"] == "passive"}
+        # 既定(arch無し)では観測性/追跡性は受動のまま
+        self.assertTrue({"ASI-T08", "INF-03"} & passive_ids or m["counts"]["passive"] == 0)
+
+
+class TestIntegrationAdapters(unittest.TestCase):
+    FX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+
+    def test_garak_normalize(self):
+        from aiva.integrations import GarakIntegration, load_registry
+        spec = next(t for t in load_registry()["tools"] if t["id"] == "garak")
+        g = GarakIntegration(spec)
+        recs = GarakIntegration.parse_report(os.path.join(self.FX, "garak.report.jsonl"))
+        out = g.normalize(recs)
+        vulns = {f["vuln"] for f in out}
+        self.assertIn("LLM01", vulns)   # promptinject の hit
+        self.assertIn("LLM05", vulns)   # xss の hit
+        self.assertTrue(all(f["source"] == "garak" for f in out))
+
+    def test_mcp_scan_normalize(self):
+        import json as _json
+        from aiva.integrations import McpScanIntegration, load_registry
+        spec = next(t for t in load_registry()["tools"] if t["id"] == "mcp-scan")
+        m = McpScanIntegration(spec)
+        raw = _json.load(open(os.path.join(self.FX, "mcp_scan.json"), encoding="utf-8"))
+        out = m.normalize(raw)
+        vulns = {f["vuln"] for f in out}
+        self.assertIn("MCP-01", vulns)  # tool poisoning
+        self.assertIn("MCP-02", vulns)  # excessive permission
+
+    def test_adapters_registered(self):
+        from aiva.integrations import load_registry, build_integration
+        for tid in ("garak", "mcp-scan", "pyrit"):
+            spec = next(t for t in load_registry()["tools"] if t["id"] == tid)
+            self.assertIsNotNone(build_integration(spec))
+
+
 if __name__ == "__main__":
     unittest.main()

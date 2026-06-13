@@ -92,12 +92,17 @@
 
     { "id": "mcp-scan", "name": "mcp-scan", "vendor": "Invariant Labs", "kind": "mcp",
       "homepage": "https://github.com/invariantlabs-ai/mcp-scan", "install": "pipx install mcp-scan",
-      "detect": { "type": "cmd", "value": "mcp-scan" }, "adapter": null,
-      "covers": ["MCP-01", "MCP-02"], "notes": "MCPサーバのツールポイズニング/過剰権限検査。" },
+      "detect": { "type": "cmd", "value": "mcp-scan" }, "adapter": "mcp-scan",
+      "covers": ["MCP-01", "MCP-02"], "notes": "MCPサーバのツールポイズニング/過剰権限検査。結果をMCP-01/02へ正規化。" },
     { "id": "agentic-radar", "name": "Agentic Radar", "vendor": "SplxAI", "kind": "agentic",
       "homepage": "https://github.com/splx-ai/agentic-radar", "install": "pip install agentic-radar",
       "detect": { "type": "module", "value": "agentic_radar" }, "adapter": null,
-      "covers": ["ASI-T02", "ASI-T06", "MCP-01"], "notes": "エージェント構成のワークフロー/脆弱性可視化。" },
+      "covers": ["ASI-T02", "ASI-T06", "ASI-T13", "MCP-01"], "notes": "エージェント構成のワークフロー/脆弱性可視化。不正/誤設定エージェントの検出。" },
+    { "id": "agentdojo", "name": "AgentDojo", "vendor": "ETH Zurich (SPY Lab)", "kind": "agentic",
+      "homepage": "https://github.com/ethz-spylab/agentdojo", "install": "pip install agentdojo",
+      "detect": { "type": "module", "value": "agentdojo" }, "adapter": null,
+      "covers": ["LLM01", "ASI-T02", "ASI-T05", "ASI-T12", "ASI-T14"],
+      "notes": "ツール出力に注入された攻撃者データに対するエージェントの堅牢性を動的評価（多段/多エージェント攻撃）。" },
 
     { "id": "art", "name": "Adversarial Robustness Toolbox", "vendor": "IBM/LF AI", "kind": "adversarial-ml",
       "homepage": "https://github.com/Trusted-AI/adversarial-robustness-toolbox", "install": "pip install adversarial-robustness-toolbox",
@@ -139,6 +144,10 @@
     { "id": "lakera-guard", "name": "Lakera Guard", "vendor": "Lakera", "kind": "guardrail",
       "homepage": "https://www.lakera.ai/", "implements": ["c-input-guard", "c-output-guard"] },
     { "id": "prompt-shields", "name": "Azure Prompt Shields", "vendor": "Microsoft", "kind": "guardrail",
-      "homepage": "https://learn.microsoft.com/azure/ai-services/content-safety/", "implements": ["c-input-guard"] }
+      "homepage": "https://learn.microsoft.com/azure/ai-services/content-safety/", "implements": ["c-input-guard"] },
+    { "id": "langfuse", "name": "Langfuse", "vendor": "Langfuse", "kind": "observability",
+      "homepage": "https://langfuse.com/", "implements": ["c-tracing", "c-audit-trail", "c-attribution"] },
+    { "id": "opentelemetry", "name": "OpenTelemetry GenAI", "vendor": "CNCF", "kind": "observability",
+      "homepage": "https://opentelemetry.io/", "implements": ["c-tracing", "c-attribution"] }
   ]
 }

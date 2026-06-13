@@ -61,6 +61,46 @@ python3 -m aiva scan --config examples/config.http.example.json --authorize
 | `aiva ingest` | `threat_intake/` の脅威をプローブ／カタログへ反映（`--write`）/ 反映済みか検証（既定・CIゲート） |
 | `aiva tools` | 統合可能な外部セキュリティツールと導入状況 |
 | `aiva coverage` | 網羅性(カバレッジ)とギャップを算定（`--format md|json` `--only-available`） |
+| `aiva run-tool` | 外部ツールを実行/レポート取込しカタログ所見へ正規化（garak/mcp-scan） |
+| `aiva audit` | アーキ記述(実装コントロール)を監査し被覆を算定（観測性/追跡性など設計統制の自動検証） |
+
+### 網羅性 100%（黒箱検査29/31 ＋ 設定監査2）
+
+`aiva coverage` の結果（カタログ31脆弱性）:
+- **能動検査(aiva) 20** … プロンプト/出力/ツール/権限/RAG/偽前提/なりすまし/消費・HITL（半能動）…
+- **外部ツール 9** … サプライチェーン(Trivy)・秘密(gitleaks)・Egress(ZAP)・MCP(mcp-scan)・多エージェント(AgentDojo/Agentic Radar)…
+- **設定監査 2** … 可観測性・追跡性(ASI-T08/INF-03)。黒箱検査では確認不能なため、アーキ記述で実装を検証。
+
+```bash
+aiva coverage                                          # 既定: 観測性系2件は受動(passive)
+aiva coverage --arch examples/architecture.example.json # 設定監査を加味 → gap0/passive0（100%）
+aiva audit --arch examples/architecture.example.json    # 実装コントロールの被覆を個別検証
+```
+
+> 単一エンドポイントの黒箱検査だけでは観測性/追跡性（ログ・トレースの有無）は判定できないため、
+> その2件は**アーキ記述(`implemented_controls`)の設定監査**で自動検証する。多エージェント特有の
+> 不正エージェント/人的攻撃は AgentDojo・Agentic Radar 等の専用ツールで担う。
+
+### 外部ツールの実行・取込（garak / mcp-scan）
+
+導入済みツールを実行、または既存レポートを取り込んで aiva 所見（カタログIDにマッピング）へ正規化:
+
+```bash
+# 既存の garak レポートを取り込む（ツール未導入でも可）
+aiva run-tool garak --import garak.report.jsonl
+# mcp-scan の結果(JSON)を取り込む
+aiva run-tool mcp-scan --import mcp_scan.json
+# 導入済みなら直接実行（--tool-config で model_type/probes 等を指定）
+aiva run-tool garak --tool-config garak.json
+```
+
+### 半能動プローブ（測定オラクル）
+
+自動検査が難しかった可用性系を、送信＋測定で半能動的に検査:
+- `consume_burst`（ASI-T04 無制限消費）→ `resource_consumption` オラクル（応答長・反復・遅延を測定）
+- `hitl_flood`（ASI-T10 HITL過負荷）→ `request_flood` オラクル（承認/確認要求の件数を測定）
+
+これにより自動検査カバレッジは約7割超に。残るマルチエージェント統制系は引き続き設計統制＋人手で対応。
 
 ## 外部ツール統合と網羅性（garak / PyRIT ほかの組合せ）
 
