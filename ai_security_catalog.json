@@ -2,7 +2,7 @@
   "meta": {
     "name": "AI / エージェンティックAI 脆弱性・コントロールカタログ",
     "slug": "ai-security-catalog",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "updated": "2026-06-13",
     "language": "ja",
     "description": "AI（LLM）アプリおよびエージェンティックAIの脆弱性を体系化し、各脆弱性に対するコントロール（対策）と実装基盤、検査プローブ、準拠フレームワークへのマッピングを提供する共有ナレッジベース。HTML自己評価ツール（ai_security_assessment.html）と汎用スキャナ（tools/aiva）の双方が参照する。",
@@ -126,6 +126,11 @@
         }
       ],
       "overlaps": {
+        "input×integrity": [
+          "LLM01",
+          "MM-01",
+          "MM-02"
+        ],
         "model×confidentiality": [
           "LLM02",
           "LLM07"
@@ -231,6 +236,12 @@
       "name": "MCP / ツール接続プロトコル固有",
       "framework": "owasp-agentic",
       "summary": "Model Context Protocol 等のツール接続層に固有の脅威。ツール説明インジェクション、ラグプル、過剰スコープ集約、混乱した代理。"
+    },
+    {
+      "id": "multimodal",
+      "name": "マルチモーダル攻撃面",
+      "framework": "atlas",
+      "summary": "画像・音声・動画・ファイル等の非テキスト入力/出力を経由した注入・なりすまし・漏えい。"
     }
   ],
   "vulnerabilities": [
@@ -2384,6 +2395,203 @@
       ],
       "surface": "tools",
       "failure_mode": "authorization"
+    },
+    {
+      "id": "MM-01",
+      "category": "multimodal",
+      "name": "画像プロンプトインジェクション",
+      "aka": [
+        "Image Prompt Injection",
+        "Visual Injection",
+        "Typographic Attack"
+      ],
+      "severity": "high",
+      "surface": "input",
+      "failure_mode": "integrity",
+      "summary": "画像内のテキスト・メタデータ・微細パターンに埋め込んだ指示でモデルを操作する。",
+      "description": "VLM/マルチモーダルLLMに与える画像の可視テキスト、alt/EXIF、低コントラスト文字、敵対的パターンに指示を仕込み、OCR/視覚理解を通じて間接プロンプトインジェクションを成立させる。",
+      "attack_vectors": [
+        "画像内テキストの指示",
+        "低コントラスト/微細文字",
+        "EXIF/メタデータの指示",
+        "敵対的視覚パターン"
+      ],
+      "affected_patterns": [
+        "pipeline",
+        "agents-as-tools",
+        "router-supervisor"
+      ],
+      "controls": [
+        {
+          "id": "c-mm-ocr-guard",
+          "type": "detective",
+          "name": "画像内テキストの検査",
+          "desc": "OCR抽出テキストを命令注入として検査・無害化。",
+          "foundation": "OCR+入力ガード"
+        },
+        {
+          "id": "c-mm-provenance",
+          "type": "preventive",
+          "name": "メディア来歴・検証",
+          "desc": "画像の出所・改ざんを検証し、メタデータを除去/無害化。",
+          "foundation": "メタデータ除去、来歴検証"
+        },
+        {
+          "id": "c-mm-segment",
+          "type": "preventive",
+          "name": "視覚入力の信頼境界分離",
+          "desc": "画像由来テキストをシステム指示と分離し命令解釈させない。",
+          "foundation": "spotlighting、信頼境界"
+        }
+      ],
+      "foundations": [
+        "OCR+入力ガード",
+        "メタデータ除去/来歴",
+        "視覚入力の信頼境界分離"
+      ],
+      "atlas": [
+        "AML.T0051.001 Indirect Prompt Injection"
+      ],
+      "nist_rmf": [
+        "MEASURE 2.7",
+        "MANAGE 2.2"
+      ],
+      "probes": [
+        "mm_image_text_injection",
+        "mm_image_meta"
+      ],
+      "signals": [
+        "画像由来指示への追従",
+        "システム指示の露出"
+      ],
+      "references": [
+        "https://atlas.mitre.org/"
+      ]
+    },
+    {
+      "id": "MM-02",
+      "category": "multimodal",
+      "name": "音声/トランスクリプト経由インジェクション",
+      "aka": [
+        "Audio Injection",
+        "ASR Injection",
+        "Voice Spoofing"
+      ],
+      "severity": "medium",
+      "surface": "input",
+      "failure_mode": "integrity",
+      "summary": "音声入力や文字起こし結果に埋め込んだ指示・なりすましでエージェントを操作する。",
+      "description": "ASR(音声認識)を経た文字起こしに指示を仕込む、超音波/可聴域外、話者なりすまし等で、音声経由の間接インジェクションや本人確認回避を狙う。",
+      "attack_vectors": [
+        "文字起こしへの指示注入",
+        "可聴域外/敵対的音声",
+        "話者なりすまし",
+        "BGM/重畳音声"
+      ],
+      "affected_patterns": [
+        "pipeline",
+        "event-driven-swarm",
+        "handoff-swarm"
+      ],
+      "controls": [
+        {
+          "id": "c-mm-asr-guard",
+          "type": "detective",
+          "name": "文字起こしの検査",
+          "desc": "ASR出力を命令注入として検査・無害化。",
+          "foundation": "入力ガード、転写後検証"
+        },
+        {
+          "id": "c-mm-voice-authn",
+          "type": "preventive",
+          "name": "音声本人確認の補強",
+          "desc": "音声のみに依存せず多要素で本人確認。",
+          "foundation": "多要素認証、liveness検知"
+        }
+      ],
+      "foundations": [
+        "転写後の入力ガード",
+        "多要素本人確認"
+      ],
+      "atlas": [
+        "AML.T0051.001 Indirect Prompt Injection",
+        "AML.T0073 Impersonation"
+      ],
+      "nist_rmf": [
+        "MEASURE 2.7",
+        "MANAGE 1.3"
+      ],
+      "probes": [
+        "mm_transcript_injection"
+      ],
+      "signals": [
+        "転写経由の指示追従",
+        "音声なりすましの受理"
+      ],
+      "references": [
+        "https://atlas.mitre.org/"
+      ]
+    },
+    {
+      "id": "MM-03",
+      "category": "multimodal",
+      "name": "マルチモーダル出力での漏えい/有害化",
+      "aka": [
+        "Multimodal Output Exfil",
+        "Image Output Harm"
+      ],
+      "severity": "medium",
+      "surface": "output",
+      "failure_mode": "confidentiality",
+      "summary": "生成画像/音声や画像参照(Markdown)経由で機密を外送・有害コンテンツを出力する。",
+      "description": "生成メディアやMarkdown画像参照を通じたデータ外送(LLM05関連)、生成画像内への秘密の埋め込み、ステガノグラフィ、有害メディア生成。",
+      "attack_vectors": [
+        "Markdown画像での外送",
+        "生成画像への秘密埋め込み",
+        "ステガノグラフィ",
+        "有害メディア生成"
+      ],
+      "affected_patterns": [
+        "pipeline",
+        "agents-as-tools"
+      ],
+      "controls": [
+        {
+          "id": "c-mm-out-egress",
+          "type": "preventive",
+          "name": "メディア出力のEgress制限",
+          "desc": "画像参照/生成メディアの外部到達先を許可リスト化。",
+          "foundation": "Egress許可リスト"
+        },
+        {
+          "id": "c-mm-out-scan",
+          "type": "detective",
+          "name": "出力メディア検査",
+          "desc": "生成/参照メディアの秘密・有害性を検査。",
+          "foundation": "出力スキャン、DLP"
+        }
+      ],
+      "foundations": [
+        "メディアEgress許可リスト",
+        "出力メディア検査/DLP"
+      ],
+      "atlas": [
+        "AML.T0024 Exfiltration via Inference API"
+      ],
+      "nist_rmf": [
+        "MEASURE 2.6",
+        "MANAGE 4.1"
+      ],
+      "probes": [
+        "mm_markdown_image_exfil"
+      ],
+      "signals": [
+        "外部URLへの画像参照",
+        "生成メディアへの秘密埋め込み"
+      ],
+      "references": [
+        "https://atlas.mitre.org/"
+      ]
     }
   ],
   "methodology": {

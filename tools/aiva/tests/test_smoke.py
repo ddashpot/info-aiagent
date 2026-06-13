@@ -317,5 +317,50 @@ class TestIntegrationAdapters(unittest.TestCase):
             self.assertIsNotNone(build_integration(spec))
 
 
+class TestMultimodal(unittest.TestCase):
+    def test_multimodal_vulns_and_probes(self):
+        cat = Catalog.load()
+        ids = {v["id"] for v in cat.vulns}
+        self.assertTrue({"MM-01", "MM-02", "MM-03"} <= ids)
+        probe_ids = {p.id for p in load_probes()}
+        self.assertIn("mm_image_text_injection", probe_ids)
+        # マルチモーダルは新カテゴリ
+        self.assertTrue(any(c["id"] == "multimodal" for c in cat.categories))
+
+
+class TestSarifAndOrchestration(unittest.TestCase):
+    FX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+
+    def _model(self, external=None):
+        cat = Catalog.load()
+        target = build_target({"type": "mock"})
+        probes = select_probes(load_probes(), selectors=["LLM01"], categories=["all"])
+        res = Engine(target, cat, load_config(None)["scan"]).run(probes)
+        return build_report_model(res, cat, load_config(None)["report"], external=external)
+
+    def test_collect_external_imports(self):
+        from aiva.integrations import load_registry, collect_external
+        ext = collect_external(load_registry(), imports={
+            "garak": os.path.join(self.FX, "garak.report.jsonl"),
+            "mcp-scan": os.path.join(self.FX, "mcp_scan.json"),
+        })
+        vulns = {f["vuln"] for f in ext}
+        self.assertTrue({"LLM01", "LLM05", "MCP-01", "MCP-02"} <= vulns)
+
+    def test_sarif_render(self):
+        from aiva.report import render_sarif
+        ext = [{"source": "garak", "vuln": "LLM01", "evidence": "x"}]
+        model = self._model(external=ext)
+        sarif = render_sarif(model)
+        self.assertEqual(sarif["version"], "2.1.0")
+        run = sarif["runs"][0]
+        self.assertEqual(run["tool"]["driver"]["name"], "aiva")
+        self.assertTrue(len(run["results"]) >= 1)
+        # 外部所見もSARIF resultsに含まれる
+        self.assertTrue(any(r["properties"].get("source") == "garak" for r in run["results"]))
+        # external がモデルに格納されている
+        self.assertEqual(len(model["external"]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
