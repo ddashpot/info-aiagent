@@ -231,6 +231,28 @@ code{font-family:var(--font-mono);background:var(--paper-2);padding:1px 6px;bord
 .sitefoot a{color:var(--ink-2);font-weight:600}
 .sitefoot a:hover{color:var(--accent-ink)}
 .sitefoot .links{display:flex;gap:18px;flex-wrap:wrap}
+
+/* ============================================================
+   Trust line + clickable framework pills
+   ============================================================ */
+a.pill{transition:.15s}
+a.pill:hover{border-color:var(--accent);color:var(--accent-ink);transform:translateY(-1px)}
+.trust{margin:14px 0 0;color:var(--muted);font-size:12px;font-family:var(--font-mono);letter-spacing:.02em}
+.trust b{color:var(--ink-2);font-weight:700}
+
+/* ============================================================
+   "使い方" 3-step band
+   ============================================================ */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;counter-reset:step}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;position:relative}
+.step .n{width:30px;height:30px;border-radius:9px;background:var(--ink);color:#fff;font-family:var(--font-mono);
+  font-weight:700;font-size:15px;display:grid;place-items:center;margin-bottom:10px}
+.step h3{font-family:var(--font-display);font-weight:600;margin:0 0 5px;font-size:16px;letter-spacing:-.01em}
+.step p{margin:0;color:var(--ink-2);font-size:13px;line-height:1.6}
+.step::after{content:"→";position:absolute;right:-12px;top:50%;transform:translateY(-50%);color:var(--line-2);
+  font-weight:700;z-index:1}
+.step:last-child::after{display:none}
+@media(max-width:680px){.steps{grid-template-columns:1fr}.step::after{display:none}}
 </style>
 </head>
 <body>
@@ -253,75 +275,97 @@ code{font-family:var(--font-mono);background:var(--paper-2);padding:1px 6px;bord
 
   <!-- ===== Hero ===== -->
   <header class="hero">
-    <span class="eyebrow">AI Security Assessment Suite</span>
-    <h1>AI・エージェンティックAI<br>セキュリティ評価スイート</h1>
-    <p class="sub">脆弱性の体系化 → 実装コントロールの自己評価 → 網羅性の可視化 → 汎用スキャナによる能動検査まで。AI（LLM）アプリとエージェンティックAIの安全性を、一気通貫で点検するためのツール群です。</p>
-
-    <div class="frameworks" aria-label="準拠フレームワーク">
-      <span class="pill brand">OWASP LLM Top10 2025</span>
-      <span class="pill">OWASP Agentic Threats</span>
-      <span class="pill">MITRE ATLAS</span>
-      <span class="pill">NIST AI RMF</span>
-      <span class="pill">ISO/IEC 42001</span>
-    </div>
+    <span class="eyebrow">AI セキュリティ評価スイート</span>
+    <h1>AIアプリの弱点を見つけ、<br>直すところまで導く。</h1>
+    <p class="sub">ブラウザで対策の実装状況を自己採点 → 弱い箇所がスコアと優先順位でわかる → 必要なら自動スキャナで深掘り。何から手を付ければいいかが、すぐに見えます。</p>
 
     <div class="hero__cta">
-      <a class="btn-hero primary" href="ai_security_assessment.html#dashboard">自己評価をはじめる <span class="arrow" aria-hidden="true">→</span></a>
-      <a class="btn-hero ghost" href="ai_security_assessment.html#coverage">カバレッジ盤を見る</a>
+      <a class="btn-hero primary" href="ai_security_assessment.html#dashboard">無料で自己評価をはじめる <span class="arrow" aria-hidden="true">→</span></a>
+      <a class="btn-hero ghost" href="#how">使い方を見る</a>
     </div>
 
     <div class="kpis">
-      <div class="kpi"><b>34</b><span>脆弱性カタログ</span></div>
+      <div class="kpi"><b>34</b><span>脆弱性</span></div>
       <div class="kpi"><b>57</b><span>検査プローブ</span></div>
-      <div class="kpi"><b>26</b><span>統合ツール</span></div>
-      <div class="kpi"><b>100%</b><span>網羅（設定監査込）</span></div>
+      <div class="kpi"><b>26</b><span>連携ツール</span></div>
+      <div class="kpi"><b>5</b><span>準拠フレームワーク</span></div>
     </div>
+
+    <div class="frameworks" aria-label="準拠フレームワーク（出典）">
+      <a class="pill brand" href="https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/" target="_blank" rel="noopener">OWASP LLM Top10 2025 ↗</a>
+      <a class="pill" href="https://genai.owasp.org/resource/agentic-ai-threats-and-mitigations/" target="_blank" rel="noopener">OWASP Agentic Threats ↗</a>
+      <a class="pill" href="https://atlas.mitre.org/" target="_blank" rel="noopener">MITRE ATLAS ↗</a>
+      <a class="pill" href="https://www.nist.gov/itl/ai-risk-management-framework" target="_blank" rel="noopener">NIST AI RMF ↗</a>
+      <a class="pill" href="https://www.iso.org/standard/81230.html" target="_blank" rel="noopener">ISO/IEC 42001 ↗</a>
+    </div>
+    <p class="trust">出典は公開フレームワーク（クリックで原典へ）｜カタログ <b>v1.3.0</b>・<b>2026-06-13</b> 更新</p>
   </header>
 
+  <!-- ===== How (3 steps) ===== -->
+  <h2 class="sec-h" id="how"><span class="num">01</span>使い方は3ステップ</h2>
+  <p class="sec-lead">インストール不要。ブラウザだけで始められ、入力はこの端末に保存されます。</p>
+  <div class="steps">
+    <div class="step">
+      <div class="n" aria-hidden="true">1</div>
+      <h3>自己採点する</h3>
+      <p>34の脆弱性ごとに、対策が「実装済／一部／未対応」かを選ぶだけ。総合スコアが出ます。</p>
+    </div>
+    <div class="step">
+      <div class="n" aria-hidden="true">2</div>
+      <h3>弱点を把握する</h3>
+      <p>未対応で深刻な項目が、直すべき順番（残存リスク順）で自動的に並びます。</p>
+    </div>
+    <div class="step">
+      <div class="n" aria-hidden="true">3</div>
+      <h3>深掘りする（任意）</h3>
+      <p>レッドチーム計画や自動スキャナ（aiva）で、実際に攻撃を試して確かめます。</p>
+    </div>
+  </div>
+
   <!-- ===== Tools ===== -->
-  <h2 class="sec-h"><span class="num">01</span>ツール</h2>
-  <p class="sec-lead">どれもブラウザ／CLI 単体で動作します。自己評価はブラウザに保存され、ネットワーク不要で始められます。</p>
+  <h2 class="sec-h"><span class="num">02</span>ツール</h2>
+  <p class="sec-lead">最初の4つはブラウザツール。残り2つは元データとCLIスキャナです。</p>
   <div class="grid">
     <a class="card" href="ai_security_assessment.html#assess">
       <div class="ic" aria-hidden="true">📋</div>
       <h3>脆弱性カタログ＆自己評価</h3>
-      <p>34脆弱性を surface×failure（MECE）で整理。実装コントロールを点検し、深刻度重み付きで態勢スコアと是正バックログを算定。</p>
+      <p>34の脆弱性ごとに対策状況を選ぶと、深刻度で重み付けしたスコアと、直すべき順番が出ます。</p>
       <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
     </a>
     <a class="card" href="ai_security_assessment.html#dashboard">
       <div class="ic" aria-hidden="true">📊</div>
-      <h3>評価ダッシュボード</h3>
-      <p>総合セキュリティ態勢・重大ギャップ・コントロールカバレッジ。回答更新で回帰的に再計算。</p>
+      <h3>ダッシュボード</h3>
+      <p>総合スコア・重大なギャップ・対策のカバレッジを一覧。回答を変えるとその場で再計算。</p>
       <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
     </a>
     <a class="card" href="ai_security_assessment.html#coverage">
       <div class="ic" aria-hidden="true">🗺️</div>
       <h3>カバレッジ盤</h3>
-      <p>影響サーフェス×失敗モードのリスク・ヒートマップと、脆弱性→対応する外部ツールの網羅マトリクス。</p>
+      <p>どの種類のリスクが手薄かをヒートマップで表示。脆弱性ごとに使える外部ツールも一覧。</p>
       <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
     </a>
     <a class="card" href="ai_security_assessment.html#redteam">
       <div class="ic" aria-hidden="true">🎯</div>
       <h3>レッドチーム検査計画</h3>
-      <p>選択範囲のプローブを集約し、スキャナ用設定とテスト計画（Markdown）を生成・エクスポート。</p>
+      <p>選んだ範囲の検査項目をまとめ、スキャナ設定とテスト計画（Markdown）を書き出します。</p>
       <span class="go">開く <span class="arrow" aria-hidden="true">→</span></span>
     </a>
     <a class="card" href="https://github.com/ddashpot/info-aiagent/tree/main/tools/aiva" target="_blank" rel="noopener">
       <div class="ic" aria-hidden="true">⚙️</div>
       <h3>aiva スキャナ（CLI）</h3>
-      <p>依存ゼロの Python 製・BYO-endpoint 能動スキャナ。既知＋未知（変異・回帰探索）、garak/mcp-scan 統合、SARIF 出力。</p>
-      <span class="go"><span class="ext">GitHub</span> リポジトリで見る <span class="arrow" aria-hidden="true">→</span></span>
+      <p>依存ゼロのPython製。手元のアプリを実際に検査します（要・対象の許可）。garak / mcp-scan 連携、SARIF 出力。</p>
+      <span class="go"><span class="ext">GitHub</span> リポジトリ <span class="arrow" aria-hidden="true">→</span></span>
     </a>
     <a class="card" href="https://github.com/ddashpot/info-aiagent/blob/main/ai_security_catalog.json" target="_blank" rel="noopener">
       <div class="ic" aria-hidden="true">📚</div>
       <h3>脆弱性カタログ（JSON）</h3>
-      <p>脆弱性 × コントロール × 実装基盤 × フレームワーク・マッピング × プローブ。HTML・スキャナ共通の真実の源。</p>
-      <span class="go"><span class="ext">GitHub</span> ソースを見る <span class="arrow" aria-hidden="true">→</span></span>
+      <p>脆弱性・対策・フレームワーク対応をまとめた元データ。上のツールとスキャナが共通で参照します。</p>
+      <span class="go"><span class="ext">GitHub</span> ソース <span class="arrow" aria-hidden="true">→</span></span>
     </a>
   </div>
 
   <!-- ===== CLI ===== -->
-  <h2 class="sec-h"><span class="num">02</span>スキャナを使う（CLI）</h2>
+  <h2 class="sec-h"><span class="num">03</span>スキャナを使う（CLI・上級者向け）</h2>
   <p class="sec-lead">既存アプリを能動検査します。まずは mock でデモ（ネットワーク・APIキー不要）。</p>
   <div class="note">⚠ 能動検査は<b>対象所有者の許可</b>が前提の防御的用途です。mock 以外は <code>--authorize</code> を明示してください。</div>
   <div class="codebox">
@@ -340,28 +384,28 @@ code{font-family:var(--font-mono);background:var(--paper-2);padding:1px 6px;bord
   </div>
 
   <!-- ===== About ===== -->
-  <h2 class="sec-h"><span class="num">03</span>このスイートについて</h2>
-  <p class="sec-lead">一過性のチェックリストではなく、追加・更新で育て、回帰的に再検査し続ける設計です。</p>
+  <h2 class="sec-h"><span class="num">04</span>このスイートの考え方</h2>
+  <p class="sec-lead">一度きりのチェックではなく、更新して使い続け、繰り返し再検査するための設計です。</p>
   <div class="principles">
     <div class="principle">
-      <span class="k">MECE 設計</span>
-      <h3>直交する2軸で整理</h3>
-      <p>脆弱性は surface(10)×failure_mode(7) の直交軸、検査は 生成戦略×判定オラクル の2軸で網羅。</p>
+      <span class="k">体系的</span>
+      <h3>もれなく整理</h3>
+      <p>脆弱性を「どこが攻撃されるか × どう失敗するか」の2軸で重複なく整理しています。</p>
     </div>
     <div class="principle">
       <span class="k">既知＋未知</span>
-      <h3>未知も炙り出す</h3>
-      <p>OWASP/ATLAS 対応プローブに加え、変異エンジン・回帰的深掘り・挙動異常検知で未知を発見。</p>
+      <h3>未知も探す</h3>
+      <p>フレームワーク対応の既知パターンに加え、入力を変異させて想定外の挙動も探します。</p>
     </div>
     <div class="principle">
-      <span class="k">網羅性</span>
-      <h3>空白を可視化</h3>
-      <p>能動検査＋外部ツール（25+）＋設定監査で全脆弱性をカバー。<code>aiva coverage</code> で空白を確認。</p>
+      <span class="k">手薄を可視化</span>
+      <h3>空白がわかる</h3>
+      <p>どのリスクの対策が薄いかを <code>aiva coverage</code> で確認できます。</p>
     </div>
     <div class="principle">
-      <span class="k">回帰運用</span>
-      <h3>継続的に再検査</h3>
-      <p>脅威インテイク（収集→反映→回帰）と GitHub Action で、発見した未知パターンを既知化して再検査。</p>
+      <span class="k">継続運用</span>
+      <h3>繰り返し再検査</h3>
+      <p>新しい脅威をカタログに取り込み、GitHub Action で継続的に再検査できます。</p>
     </div>
   </div>
 
