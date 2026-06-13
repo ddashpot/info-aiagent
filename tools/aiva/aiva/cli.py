@@ -226,7 +226,16 @@ def cmd_scan(args) -> int:
     engine = Engine(target, catalog, cfg["scan"], verbose=args.verbose, log=log)
     result = engine.run(probes)
 
-    model = build_report_model(result, catalog, cfg["report"])
+    # 外部ツール統合実行（--with-tools / --tool-import）
+    external = []
+    if args.with_tools or args.tool_import:
+        from .integrations import load_registry, collect_external
+        run_tools = args.with_tools.split(",") if args.with_tools else []
+        imports = dict(kv.split("=", 1) for kv in args.tool_import.split(",")) if args.tool_import else {}
+        external = collect_external(load_registry(), run_tools=run_tools, imports=imports, log=log)
+        log(f"外部ツール所見: {len(external)} 件を統合")
+
+    model = build_report_model(result, catalog, cfg["report"], external=external)
     written = write_reports(model, cfg["report"])
 
     s = result.summary()
@@ -256,8 +265,10 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--target", choices=["mock", "http", "openai"], help="target.type を上書き")
     sc.add_argument("--probes", help="カンマ区切り（プローブID/脆弱性ID/グロブ/all）")
     sc.add_argument("--categories", help="カンマ区切り（llm,agentic,infra,all）")
-    sc.add_argument("--format", help="md,json,html のカンマ区切り")
+    sc.add_argument("--format", help="md,json,html,sarif のカンマ区切り")
     sc.add_argument("--out", help="レポート出力先ディレクトリ")
+    sc.add_argument("--with-tools", help="統合実行する外部ツールID（例: garak,mcp-scan・導入済みのみ）")
+    sc.add_argument("--tool-import", help="外部ツールのレポート取込（例: garak=report.jsonl,mcp-scan=res.json）")
     sc.add_argument("--authorize", action="store_true", help="検査対象の所有/検査許可を明示する")
     sc.add_argument("--dry-run", action="store_true", help="送信せず対象プローブのみ表示")
     sc.add_argument("--no-mutation", action="store_true", help="変異・未知探索を無効化")

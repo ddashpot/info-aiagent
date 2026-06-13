@@ -33,7 +33,8 @@ def _sorted_findings(findings: List[Finding]) -> List[Finding]:
                                            _SEV_ORDER.get(f.severity, 5), -f.score))
 
 
-def build_report_model(result: ScanResult, catalog: Catalog, cfg: Dict[str, Any]) -> Dict[str, Any]:
+def build_report_model(result: ScanResult, catalog: Catalog, cfg: Dict[str, Any],
+                       external: List[Dict[str, Any]] = None) -> Dict[str, Any]:
     findings = _sorted_findings(result.findings)
     oracle_counts: Dict[str, int] = {}
     items = []
@@ -76,6 +77,11 @@ def build_report_model(result: ScanResult, catalog: Catalog, cfg: Dict[str, Any]
         "summary": result.summary(),
         "oracle_counts": oracle_counts,
         "findings": items,
+        "external": [
+            {**e, "vuln_name": catalog.name_of(e.get("vuln", "")),
+             "severity": catalog.severity_of(e.get("vuln", ""))}
+            for e in (external or [])
+        ],
     }
 
 
@@ -99,7 +105,71 @@ def write_reports(model: Dict[str, Any], cfg: Dict[str, Any]) -> List[str]:
         with open(p, "w", encoding="utf-8") as fh:
             fh.write(render_html(model))
         written.append(p)
+    if "sarif" in formats:
+        p = os.path.join(out_dir, "report.sarif")
+        with open(p, "w", encoding="utf-8") as fh:
+            json.dump(render_sarif(model), fh, ensure_ascii=False, indent=2)
+        written.append(p)
     return written
+
+
+_SARIF_LEVEL = {"vulnerable": "error", "weak": "warning", "anomaly": "note"}
+_SEC_SEVERITY = {"critical": "9.5", "high": "8.0", "medium": "5.5", "low": "3.0", "info": "1.0"}
+
+
+def render_sarif(model: Dict[str, Any]) -> Dict[str, Any]:
+    """SARIF 2.1.0 出力（GitHub Code Scanning にアップロード可能）。"""
+    m = model["meta"]
+    rules: Dict[str, Dict[str, Any]] = {}
+    results = []
+
+    def add_rule(rid, name, sev):
+        if rid not in rules:
+            rules[rid] = {
+                "id": rid, "name": name,
+                "shortDescription": {"text": name},
+                "properties": {"security-severity": _SEC_SEVERITY.get(sev, "5.5"),
+                               "tags": ["ai-security", "owasp-llm"]},
+            }
+
+    for f in model["findings"]:
+        level = _SARIF_LEVEL.get(f["status"])
+        if not level:
+            continue
+        rid = f["probe_id"]
+        add_rule(rid, f["title"], f["severity"])
+        results.append({
+            "ruleId": rid, "level": level,
+            "message": {"text": f"[{f['vuln_id']} {f['vuln_name']}] {f['title']} "
+                                f"(score={f['score']}, {f['status_label']})"},
+            "locations": [{"physicalLocation": {
+                "artifactLocation": {"uri": m["target"]}}}],
+            "properties": {"vuln": f["vuln_id"], "severity": f["severity"],
+                           "score": f["score"], "source": "aiva"},
+        })
+    for e in model.get("external", []):
+        rid = f"ext.{e.get('source')}.{e.get('vuln')}"
+        add_rule(rid, f"{e.get('source')}: {e.get('vuln_name')}", e.get("severity", "medium"))
+        results.append({
+            "ruleId": rid, "level": "warning",
+            "message": {"text": f"[{e.get('vuln')} {e.get('vuln_name')}] "
+                                f"{str(e.get('evidence',''))[:200]} (via {e.get('source')})"},
+            "locations": [{"physicalLocation": {"artifactLocation": {"uri": m["target"]}}}],
+            "properties": {"vuln": e.get("vuln"), "source": e.get("source")},
+        })
+    return {
+        "version": "2.1.0",
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "runs": [{
+            "tool": {"driver": {
+                "name": "aiva",
+                "informationUri": "https://github.com/ddashpot/info-aiagent",
+                "version": str(m.get("catalog_version", "1.0")),
+                "rules": list(rules.values()),
+            }},
+            "results": results,
+        }],
+    }
 
 
 def render_markdown(model: Dict[str, Any]) -> str:
@@ -149,6 +219,14 @@ def render_markdown(model: Dict[str, Any]) -> str:
                 lines.append(f"- 実装基盤: {', '.join(f['foundations'])}")
             if f["references"]:
                 lines.append(f"- 参照: {', '.join(f['references'])}")
+        lines.append("")
+    ext = model.get("external", [])
+    if ext:
+        lines += ["## 外部ツール所見（統合実行）", "",
+                  "| ツール | 脆弱性 | 深刻度 | 根拠 |", "|---|---|---|---|"]
+        for e in ext:
+            lines.append(f"| {e.get('source')} | {e.get('vuln')} {e.get('vuln_name')} | "
+                         f"{e.get('severity')} | {str(e.get('evidence',''))[:120]} |")
         lines.append("")
     return "\n".join(lines)
 

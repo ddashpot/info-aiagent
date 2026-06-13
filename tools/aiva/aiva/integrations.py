@@ -196,6 +196,50 @@ _ADAPTERS: Dict[str, Callable[[Dict[str, Any]], Integration]] = {
 }
 
 
+def collect_external(registry: Dict[str, Any], *, run_tools: List[str] = None,
+                     imports: Dict[str, str] = None, tool_cfg: Dict[str, Any] = None,
+                     log=None) -> List[Dict[str, Any]]:
+    """外部ツールを実行 or レポート取込し、正規化所見をまとめて返す（統合実行）。
+
+    run_tools: 実行するツールID（導入済みのみ）。imports: {tool_id: report_path}。
+    """
+    run_tools = run_tools or []
+    imports = imports or {}
+    tool_cfg = tool_cfg or {}
+    log = log or (lambda *_a, **_k: None)
+    specs = {t["id"]: t for t in registry.get("tools", [])}
+    findings: List[Dict[str, Any]] = []
+
+    for tid, path in imports.items():
+        spec = specs.get(tid)
+        integ = build_integration(spec) if spec else None
+        if not integ:
+            log(f"[external] {tid}: 取込アダプタ未対応・未知ツール")
+            continue
+        if tid == "garak":
+            raw = GarakIntegration.parse_report(path)
+        else:
+            with open(path, "r", encoding="utf-8") as fh:
+                raw = json.load(fh)
+        fs = integ.normalize(raw)
+        log(f"[external] {tid}: 取込 {len(fs)} 件 ({path})")
+        findings += fs
+
+    for tid in run_tools:
+        spec = specs.get(tid)
+        integ = build_integration(spec) if spec else None
+        if not integ:
+            log(f"[external] {tid}: 実行アダプタ未対応")
+            continue
+        if not integ.available():
+            log(f"[external] {tid}: 未導入のためスキップ（{spec.get('install','')}）")
+            continue
+        fs = integ.normalize(integ.run(tool_cfg.get(tid, {})))
+        log(f"[external] {tid}: 実行 {len(fs)} 件")
+        findings += fs
+    return findings
+
+
 def build_integration(spec: Dict[str, Any]) -> Optional[Integration]:
     a = spec.get("adapter")
     if a and a in _ADAPTERS:
