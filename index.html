@@ -1,2184 +1,341 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>はじめてのAIエージェント設計ガイド — 作りたいAIから設計がわかる | Agent Platform</title>
-<meta name="description" content="作りたい業務を選ぶだけで、AIエージェントの構成・記憶・外部ツール連携のおすすめパターンがわかる初心者向け設計ガイド。専門用語は後から、まずは作りたいAIから始められます。" />
-<meta name="theme-color" content="#16181d" />
-<meta name="color-scheme" content="light" />
-<link rel="canonical" href="./" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GUILD — つくって、動かして、リスクまで見極める。AIエージェント開発プラットフォーム</title>
+<meta name="description" content="やりたいことを選ぶだけ。動かす前にリスクまで評価できる、AIエージェント開発プラットフォーム。">
+<meta name="theme-color" content="#18170F">
+<meta name="color-scheme" content="light">
+<link rel="canonical" href="./">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20fill='%23F4F1E9'/%3E%3Ctext%20x='16'%20y='23'%20font-family='Georgia,serif'%20font-size='22'%20font-weight='800'%20text-anchor='middle'%20fill='%231B3CCB'%3EG%3C/text%3E%3C/svg%3E">
 
-<!-- favicon (inline SVG, 差し替え可) -->
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='7'%20fill='%2316181d'/%3E%3Cpath%20d='M8%2022V10h3.2l4.6%208.1L20.4%2010h3.2v12h-2.9v-6.7l-3.4%206h-1.8l-3.4-6V22z'%20fill='%2334d8c9'/%3E%3C/svg%3E" />
+<!-- Open Graph / Twitter -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="GUILD">
+<meta property="og:title" content="つくって、動かして、リスクまで見極める。">
+<meta property="og:description" content="やりたいことを選ぶだけ。動かす前にリスクまで評価できる、AIエージェント開発プラットフォーム。">
+<meta property="og:image" content="./assets/ogp.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="GUILD — AIエージェント開発プラットフォーム">
+<meta name="twitter:description" content="やりたいことを選ぶだけ。動かす前にリスクまで評価できる。">
+<meta name="twitter:image" content="./assets/ogp.png">
 
-<!-- Open Graph / Twitter (#8) — og:image は assets/ogp.png を配置 -->
-<meta property="og:type" content="website" />
-<meta property="og:site_name" content="Agent Platform" />
-<meta property="og:title" content="はじめてのAIエージェント設計ガイド" />
-<meta property="og:description" content="作りたい業務を選ぶだけで、AIエージェントの構成・記憶・外部ツール連携のおすすめパターンがわかります。専門用語は後から、まずは作りたいAIから。" />
-<meta property="og:image" content="./assets/ogp.png" />
-<meta property="og:image:width" content="1200" />
-<meta property="og:image:height" content="630" />
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="はじめてのAIエージェント設計ガイド" />
-<meta name="twitter:description" content="作りたいAIを選ぶだけで、構成・記憶・ツール連携のおすすめがわかる初心者向けガイド。" />
-<meta name="twitter:image" content="./assets/ogp.png" />
-
-<!-- 構造化データ (#8) -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "はじめてのAIエージェント設計ガイド",
-  "description": "作りたい業務から、AIエージェントの構成・メモリ・ツール連携のおすすめ設計にたどり着ける初心者向けガイド。",
-  "inLanguage": "ja",
-  "publisher": { "@type": "Organization", "name": "Agent Platform" }
-}
-</script>
-
-<!-- Fonts: Fraunces(display) / Noto Sans JP(本文) / JetBrains Mono(数値・ID) -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;600;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-/* ============================================================
-   Design system — "Spec sheet × Dev tool"
-   Paper ground + ink type + single teal accent.
-   意味色(緑/黄/赤)はマトリクスとリスク表示のみに限定。
-   ============================================================ */
-:root{
-  /* paper & ink */
-  --paper:#f6f4ee;
-  --paper-2:#efece4;
-  --surface:#ffffff;
-  --ink:#171a1f;
-  --ink-2:#3c424b;
-  --muted:#6c7079;
-  --line:#e6e1d7;
-  --line-2:#d8d2c6;
-
-  /* single brand accent: deep teal */
-  --accent:#0e7c86;
-  --accent-ink:#0a5b63;
-  --accent-soft:#d6efec;
-  --accent-bg:#eaf6f4;
-
-  /* semantic — data areas only */
-  --rec:#15803d;   --rec-bg:#dcfce7;
-  --nat:#3f9d63;   --nat-bg:#e7f6ec;
-  --ok:#8a9099;    --ok-bg:#eef0f2;
-  --warn:#a85a13;  --warn-bg:#fbf0dc;
-  --no:#c0392b;    --no-bg:#fbe4e1;
-
-  --shadow-sm:0 1px 2px rgba(23,26,31,.05);
-  --shadow:0 10px 34px rgba(23,26,31,.10);
-
-  --r:14px; --r-sm:10px;
-
-  --font-display:"Fraunces","Noto Sans JP",Georgia,serif;
-  --font-sans:"Noto Sans JP",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-
-  --tap:44px;
-}
-
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
-body{
-  margin:0;
-  font-family:var(--font-sans);
-  color:var(--ink);
-  line-height:1.65;
-  font-size:14px;
-  letter-spacing:.01em;
-  background-color:var(--paper);
-  background-image:
-    radial-gradient(rgba(23,26,31,.045) 1px, transparent 1px);
-  background-size:22px 22px;
-  background-position:-11px -11px;
-}
-a{color:var(--accent-ink);text-decoration:none}
-::selection{background:var(--accent-soft);color:var(--accent-ink)}
-
-/* accessible focus */
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
-.skip-link{position:absolute;left:12px;top:-60px;z-index:200;background:var(--ink);color:#fff;padding:10px 14px;border-radius:10px;font-weight:700;transition:top .15s}
-.skip-link:focus{top:12px}
-
-/* ============================================================
-   Brand bar (platform 帰属) — #2/#8
-   ============================================================ */
-.brandbar{
-  position:sticky;top:0;z-index:60;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  padding:12px clamp(14px,4vw,40px);
-  background:rgba(246,244,238,.82);
-  backdrop-filter:saturate(140%) blur(10px);
-  border-bottom:1px solid var(--line);
-}
-.brand{display:flex;align-items:center;gap:11px;min-width:0}
-.brand__mark{flex:0 0 auto;width:32px;height:32px;border-radius:8px;background:var(--ink);color:#34d8c9;
-  display:grid;place-items:center;font-family:var(--font-display);font-weight:600;font-size:19px}
-.brand__name{font-weight:700;font-size:15px;letter-spacing:-.01em;white-space:nowrap}
-.brand__tag{color:var(--muted);font-size:12px;border-left:1px solid var(--line-2);padding-left:11px;white-space:nowrap}
-.toolbar{display:flex;align-items:center;gap:8px}
-.cta{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;
-  border:0;border-radius:10px;padding:9px 15px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;
-  min-height:var(--tap);transition:.15s}
-.cta:hover{background:var(--accent-ink);transform:translateY(-1px)}
-.icon-btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);color:var(--ink-2);
-  border:1px solid var(--line-2);border-radius:10px;padding:8px 12px;font:inherit;font-weight:600;font-size:13px;
-  cursor:pointer;min-height:var(--tap);transition:.15s}
-.icon-btn:hover{border-color:var(--ink-2);color:var(--ink)}
-.icon-btn.copied{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-bg)}
-
-.app{max-width:1280px;margin:0 auto;padding:28px clamp(14px,4vw,40px) 80px}
-
-/* ============================================================
-   Header
-   ============================================================ */
-.head{margin-bottom:22px}
-.eyebrow{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);
-  font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-ink)}
-.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent)}
-.head h1{font-family:var(--font-display);font-weight:600;margin:12px 0 8px;
-  font-size:clamp(28px,5vw,46px);letter-spacing:-.02em;line-height:1.08}
-.head p{margin:0;color:var(--ink-2);max-width:760px;font-size:15px}
-
-/* ============================================================
-   Top nav (segmented) — scrollable on mobile #5
-   ============================================================ */
-.topnav{display:flex;gap:4px;margin:22px 0;padding:5px;background:var(--surface);
-  border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow-sm);
-  overflow-x:auto;scrollbar-width:none}
-.topnav::-webkit-scrollbar{display:none}
-.topnav button{flex:1 0 auto;min-width:130px;min-height:var(--tap);padding:10px 14px;border:0;background:transparent;
-  border-radius:9px;font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--ink-2);
-  white-space:nowrap;transition:.15s}
-.topnav button:hover{background:var(--paper-2);color:var(--ink)}
-.topnav button.active{background:var(--ink);color:#fff}
-
-/* ============================================================
-   Shared atoms
-   ============================================================ */
-.btn{border:1px solid var(--line-2);border-radius:10px;padding:10px 14px;font:inherit;font-weight:700;
-  cursor:pointer;background:var(--surface);color:var(--ink);font-size:13px;min-height:var(--tap);transition:.15s}
-.btn:hover{border-color:var(--ink-2);transform:translateY(-1px)}
-.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
-.btn.blue{background:var(--accent);color:#fff;border-color:var(--accent)}
-.btn.blue:hover{background:var(--accent-ink)}
-.btn.sm{padding:7px 11px;font-size:12px;min-height:0}
-.btn[disabled]{opacity:.4;cursor:not-allowed}
-.btn[disabled]:hover{transform:none;border-color:var(--line-2)}
-
-.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 11px;
-  background:var(--paper-2);color:var(--ink-2);font-size:12px;font-weight:600;border:1px solid transparent;line-height:1.4}
-.pill.blue{background:var(--accent-bg);color:var(--accent-ink)}     /* = brand accent */
-.pill.green{background:var(--rec-bg);color:var(--rec)}
-.pill.amber{background:var(--warn-bg);color:var(--warn)}
-.pill.red{background:var(--no-bg);color:var(--no)}
-.pill.gray{background:var(--paper-2);color:var(--muted)}
-.pill.click{cursor:pointer;transition:.15s}
-.pill.click:hover{border-color:currentColor;transform:translateY(-1px)}
-
-.section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:14px}
-.section h3{font-family:var(--font-display);font-weight:600;margin:0 0 14px;font-size:17px;letter-spacing:-.01em}
-.section h2{font-family:var(--font-display);font-weight:600;margin:0 0 10px;font-size:22px;letter-spacing:-.015em}
-.section p{margin:0 0 8px;color:var(--ink-2);font-size:14px}
-
-/* view transition #5/#2 */
-.view{display:none}
-.view.active{display:block;animation:viewIn .32s cubic-bezier(.2,.7,.2,1)}
-@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* ============================================================
-   Intro band
-   ============================================================ */
-.uc-intro{padding:22px;background:var(--surface);border:1px solid var(--line);
-  border-left:3px solid var(--accent);border-radius:var(--r);margin-bottom:16px}
-.uc-intro h2{font-family:var(--font-display);font-weight:600;margin:0 0 6px;font-size:24px;letter-spacing:-.015em}
-.uc-intro p{margin:0;color:var(--ink-2);font-size:14px;max-width:760px}
-
-.tagrow{display:flex;flex-wrap:wrap;gap:7px;margin:16px 0 0}
-.tag{padding:7px 13px;border-radius:999px;background:var(--surface);border:1px solid var(--line-2);
-  font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--ink-2);min-height:36px;transition:.15s}
-.tag:hover{border-color:var(--accent);color:var(--accent-ink)}
-.tag.active{background:var(--ink);color:#fff;border-color:var(--ink)}
-
-/* staggered card reveal #2 */
-.uc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:16px}
-.uc-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:18px;
-  cursor:pointer;transition:.18s;position:relative;animation:cardIn .4s both}
-.uc-card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
-.uc-card h4{font-family:var(--font-display);font-weight:600;margin:10px 0 5px;font-size:16px;letter-spacing:-.01em}
-.uc-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
-.uc-trio{display:flex;gap:5px;flex-wrap:wrap;margin-top:12px}
-.uc-trio .pill{font-size:11px;padding:3px 9px}
-.uc-tags{display:flex;gap:5px;flex-wrap:wrap}
-.uc-tags .pill{font-size:10.5px;padding:2px 8px;background:var(--paper-2);color:var(--muted);font-family:var(--font-mono);font-weight:500}
-@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-
-/* ============================================================
-   Search
-   ============================================================ */
-.search-layout{display:grid;grid-template-columns:288px 1fr;gap:18px}
-.panel{position:sticky;top:74px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  padding:18px;align-self:start}
-.panel__head{display:none}
-.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:14px;background:var(--paper-2);padding:4px;border-radius:11px}
-.tab{padding:9px 6px;border-radius:8px;border:0;background:transparent;font:inherit;font-weight:700;cursor:pointer;
-  font-size:11.5px;color:var(--ink-2);min-height:38px;transition:.15s}
-.tab:hover{color:var(--ink)}
-.tab.active{background:var(--surface);color:var(--ink);box-shadow:var(--shadow-sm)}
-.field{margin-bottom:13px}
-.field label{display:block;font-weight:700;font-size:11px;margin-bottom:5px;color:var(--muted);
-  letter-spacing:.05em;text-transform:uppercase}
-select,input[type="search"]{width:100%;border:1px solid var(--line-2);background:var(--surface);
-  border-radius:9px;padding:10px 11px;outline:none;font:inherit;font-size:13.5px;color:var(--ink);min-height:var(--tap)}
-select:hover,input:hover{border-color:var(--ink-2)}
-select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-
-.stats{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
-.list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:18px;
-  cursor:pointer;transition:.18s}
-.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow)}
-.card h3{font-family:var(--font-display);font-weight:600;margin:10px 0 6px;font-size:16px;letter-spacing:-.01em}
-.card p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
-.card-footer{margin-top:12px;display:flex;gap:5px;flex-wrap:wrap}
-.empty{padding:40px;text-align:center;color:var(--muted);background:var(--surface);
-  border:1px dashed var(--line-2);border-radius:var(--r)}
-
-/* mobile filter trigger #5 */
-.filterbar{display:none;margin-bottom:14px}
-.drawer-overlay{display:none;position:fixed;inset:0;background:rgba(23,26,31,.42);z-index:90}
-.drawer-overlay.show{display:block}
-.drawer-close{display:none}
-
-/* ============================================================
-   Detail
-   ============================================================ */
-.detail{background:transparent}
-.detail-head{margin-bottom:14px}
-.detail h2{font-family:var(--font-display);font-weight:600;margin:10px 0 8px;font-size:clamp(26px,4vw,34px);letter-spacing:-.02em}
-.detail .lead{color:var(--ink-2);font-size:15px;max-width:760px}
-.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
-.metric{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px}
-.metric b{display:block;font-family:var(--font-mono);font-size:10.5px;color:var(--muted);margin-bottom:5px;
-  font-weight:500;letter-spacing:.08em;text-transform:uppercase}
-.metric span{font-weight:700;font-size:14px}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.itembox{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:14px;margin-bottom:10px}
-.itembox h4{font-family:var(--font-display);font-weight:600;margin:0 0 6px;font-size:14px}
-.itembox p{margin:3px 0;color:var(--ink-2);font-size:13.5px;line-height:1.6}
-.itembox ul{margin:5px 0;padding-left:18px}
-.itembox li{font-size:13.5px;color:var(--ink-2);margin:3px 0}
-.risk h4{color:var(--no)}
-.control h4{color:var(--rec)}
-.legend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-
-/* compact diagram key (#凡例 co-located with 図解) */
-.diagrams .diagram-title{font-family:var(--font-display);font-weight:600;font-size:14px;margin:18px 0 8px;color:var(--ink-2)}
-.legend{background:var(--paper-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 6px}
-.legend__cap{display:block;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--muted);margin-bottom:9px}
-.legend__items{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:7px 18px}
-.legend__item{display:grid;grid-template-columns:auto 1fr;gap:8px;font-size:12px;color:var(--ink-2);line-height:1.5}
-.legend__item b{font-family:var(--font-display);font-weight:600;color:var(--ink);white-space:nowrap}
-.backrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
-.copy-note{font-size:12px;color:var(--accent-ink);font-weight:600}
-
-.crosslink{background:var(--accent-bg);border:1px solid var(--accent-soft);border-left:3px solid var(--accent)}
-.crosslink h4{color:var(--accent-ink);font-family:var(--font-display);font-weight:600;margin:0 0 8px;font-size:15px}
-.crosslink p{font-size:13.5px}
-.linkrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
-
-/* ============================================================
-   Mermaid
-   ============================================================ */
-.mermaid-wrap{display:grid;grid-template-columns:1fr;gap:8px}
-.diagram-card{background:var(--ink);color:#e7e9ec;border-radius:12px;padding:12px;overflow:auto;max-height:300px}
-.diagram-card pre{margin:0;white-space:pre;line-height:1.5;font-size:11px;font-family:var(--font-mono)}
-.render{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;overflow:auto}
-.mermaid{min-height:60px}
-
-/* ============================================================
-   Matrix  (#5 sticky headers + #4 button cells)
-   ============================================================ */
-.matrix-toggle{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:11px;
-  padding:4px;margin-bottom:14px}
-.matrix-toggle button{border:0;background:transparent;padding:9px 16px;font:inherit;font-weight:700;font-size:12.5px;
-  cursor:pointer;border-radius:8px;color:var(--ink-2);min-height:40px;transition:.15s}
-.matrix-toggle button.active{background:var(--ink);color:#fff}
-
-.matrix-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.matrix-legend .swatch{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:8px;
-  font-weight:700;font-size:12px;font-family:var(--font-mono)}
-
-.matrix-wrap{overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  padding:12px;box-shadow:var(--shadow-sm);max-height:78vh}
-table.matrix{border-collapse:separate;border-spacing:3px;font-size:11px;width:auto}
-table.matrix th,table.matrix td{padding:0;vertical-align:middle;text-align:center}
-table.matrix thead th{position:sticky;top:-12px;z-index:3;background:var(--surface)}
-table.matrix th.row{position:sticky;left:-12px;z-index:2;text-align:left;font-weight:700;padding:8px 11px;
-  background:var(--paper-2);border-radius:7px;min-width:168px;font-size:12px;color:var(--ink)}
-table.matrix thead th.row{z-index:4}
-table.matrix th.col{font-weight:700;padding:7px 5px;background:var(--paper-2);border-radius:7px;font-size:10.5px;
-  min-width:62px;max-width:84px;line-height:1.3;color:var(--ink-2)}
-.cell{width:100%;min-width:60px;min-height:38px;border:1px solid transparent;border-radius:7px;
-  font-family:var(--font-mono);font-weight:700;font-size:16px;line-height:1;cursor:pointer;transition:.12s;color:inherit}
-.cell:hover{transform:scale(1.12);box-shadow:var(--shadow-sm);border-color:var(--ink)}
-.cell-rec{background:var(--rec);color:#fff}
-.cell-nat{background:#a7e3bd;color:#14532d}
-.cell-ok{background:var(--ok-bg);color:var(--muted)}
-.cell-warn{background:#f0c061;color:#5b3210}
-.cell-no{background:var(--no);color:#fff}
-
-/* matrix tip → bottom sheet (#4 dialog / #5) */
-.matrix-tip{position:fixed;left:0;right:0;bottom:0;background:var(--ink);color:#fff;padding:16px clamp(14px,4vw,40px);
-  transform:translateY(110%);transition:transform .24s cubic-bezier(.2,.7,.2,1);z-index:100;
-  box-shadow:0 -12px 40px rgba(0,0,0,.28);border-radius:16px 16px 0 0}
-.matrix-tip.show{transform:translateY(0)}
-.matrix-tip-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-  gap:16px;flex-wrap:wrap}
-.matrix-tip h4{font-family:var(--font-display);font-weight:600;margin:0 0 5px;font-size:15px}
-.matrix-tip p{margin:0;font-size:13px;color:#c4c9d0;line-height:1.55}
-.matrix-tip .actions{display:flex;gap:8px}
-.matrix-tip .btn{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.18)}
-.matrix-tip .btn.blue{background:var(--accent);border-color:var(--accent)}
-
-/* ============================================================
-   Builder
-   ============================================================ */
-.builder-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
-.builder-slot{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px}
-.builder-slot label{display:block;font-family:var(--font-mono);font-weight:500;font-size:10.5px;color:var(--muted);
-  text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px}
-.builder-slot select{width:100%}
-.builder-slot .desc{margin-top:9px;font-size:12.5px;color:var(--muted);min-height:30px;line-height:1.55}
-
-.compat-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:13px 16px;background:var(--surface);
-  border:1px solid var(--line);border-radius:var(--r-sm);align-items:center}
-.compat-bar b{font-size:12px;color:var(--muted)}
-.compat-bar .label{font-size:13px;font-weight:700}
-
-.compose-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px}
-.compose-row .section{margin-bottom:0;padding:16px}
-.compose-row .section h3{font-family:var(--font-mono);font-size:11px;color:var(--muted);text-transform:uppercase;
-  letter-spacing:.07em;font-weight:700;margin-bottom:9px}
-
-.combined-risks .itembox{font-size:12.5px}
-.combined-risks h4{font-size:13px}
-
-/* ============================================================
-   Risk & Control pair cards
-   ============================================================ */
-.rc-section-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:18px 0 10px;font-size:13px;font-weight:700;
-  color:var(--ink);letter-spacing:.01em}
-.rc-section-head .pill{font-size:11px;padding:3px 10px}
-.rc-section-head .rc-muted{color:var(--muted);font-weight:500;font-size:11.5px}
-.rc-section-head--key{color:#9a2d20}
-
-.rc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin:6px 0}
-
-.rc-pair{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.15s}
-.rc-pair:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--line-2)}
-
-.rc-pair__row{display:grid;grid-template-columns:62px 1fr;gap:13px;padding:13px 16px}
-.rc-pair__row--ctl{border-top:1px solid var(--line)}
-.rc-pair__kind{justify-self:start;align-self:start;font-family:var(--font-mono);font-size:10.5px;font-weight:700;
-  letter-spacing:.02em;padding:3px 8px;border-radius:7px;white-space:nowrap}
-.rc-pair__row--risk .rc-pair__kind{color:var(--no);background:var(--no-bg)}
-.rc-pair__row--ctl  .rc-pair__kind{color:var(--rec);background:var(--rec-bg)}
-.rc-pair__text{margin:0;font-size:13px;line-height:1.7;color:var(--ink)}
-.rc-pair__row--ctl .rc-pair__text{color:var(--ink-2)}
-
-/* 視点2 emphasis (flat: thin red rail) */
-.rc-key{margin-top:2px}
-
-.rc-group{margin:10px 0 16px}
-.rc-group__head{display:flex;align-items:center;gap:9px;margin:0 0 9px;padding:8px 12px;background:var(--paper-2);
-  border-radius:9px;font-size:12px;font-weight:700;color:var(--ink-2)}
-.rc-group__head .rc-group__tag{padding:2px 8px;border-radius:6px;font-family:var(--font-mono);font-size:10px;font-weight:700}
-.rc-group__head .rc-group__tag.a{background:var(--rec-bg);color:var(--rec)}
-.rc-group__head .rc-group__tag.m{background:var(--warn-bg);color:var(--warn)}
-.rc-group__head .rc-group__tag.t{background:var(--accent-bg);color:var(--accent-ink)}
-.rc-group__head .rc-group__name{color:var(--muted);font-weight:500}
-.rc-group__head .rc-group__count{margin-left:auto;color:var(--muted);font-weight:500;font-size:11px;font-family:var(--font-mono)}
-
-.usecase-risks{background:var(--no-bg);border-left:3px solid var(--no)}
-.usecase-risks h3{color:#9a2d20}
-
-.memory-general{background:var(--warn-bg);border:1px solid #ecd3a6;border-radius:10px;padding:12px 14px;margin-top:10px}
-.memory-general__note{margin:0 0 9px;font-size:12px;color:#7c4a12;font-weight:600;line-height:1.6}
-.memory-general__note::before{content:"ℹ ";font-weight:700}
-.memory-general .itembox{margin-bottom:0}
-
-/* ============================================================
-   Responsive — mobile first refinements (#5)
-   ============================================================ */
-@media(max-width:1024px){
-  .search-layout{grid-template-columns:1fr}
-  .panel{position:static}
-}
-@media(max-width:900px){
-  .compose-row{grid-template-columns:1fr}
-  .builder-grid{grid-template-columns:1fr}
-  .grid3{grid-template-columns:1fr 1fr}
-}
-@media(max-width:760px){
-  .brand__tag{display:none}
-  .list,.uc-grid{grid-template-columns:1fr}
-  .two,.legend-grid,.grid3{grid-template-columns:1fr}
-  .rc-grid{grid-template-columns:1fr}
-  .matrix-tip-inner{flex-direction:column;align-items:stretch}
-  .matrix-tip .actions{justify-content:flex-end}
-
-  /* filter panel → off-canvas drawer */
-  .filterbar{display:flex;gap:8px;align-items:center}
-  .filterbar .count-inline{font-size:12px;color:var(--muted);margin-left:auto}
-  .panel{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:95;border-radius:18px 18px 0 0;
-    max-height:86vh;overflow:auto;transform:translateY(110%);transition:transform .26s cubic-bezier(.2,.7,.2,1);
-    box-shadow:0 -12px 40px rgba(23,26,31,.22)}
-  .panel.open{transform:translateY(0)}
-  .panel__head{display:flex;align-items:center;justify-content:space-between;margin:-4px 0 12px}
-  .panel__head strong{font-family:var(--font-display);font-weight:600;font-size:16px}
-  .drawer-close{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
-    border-radius:9px;border:1px solid var(--line-2);background:var(--surface);font-size:18px;cursor:pointer}
-}
-@media(max-width:480px){
-  .app{padding:20px 14px 80px}
-  .head h1{font-size:30px}
-  .topnav button{min-width:118px}
-}
-
-/* ============================================================
-   BEGINNER LAYER — 初心者向けガイド拡張
-   既存の "paper + ink + teal" を踏襲しつつ、入口をやわらかく。
-   ============================================================ */
-
-/* --- Hero (top page first view) --- */
-.hero{margin:6px 0 26px}
-.hero .eyebrow{margin-bottom:14px}
-.hero h1{font-family:var(--font-display);font-weight:600;margin:0 0 14px;
-  font-size:clamp(30px,5.4vw,50px);letter-spacing:-.022em;line-height:1.06}
-.hero__sub{margin:0 0 22px;color:var(--ink-2);max-width:680px;font-size:clamp(15px,2.4vw,17px);line-height:1.7}
-.hero__cta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:28px}
-.btn-hero{display:inline-flex;align-items:center;gap:8px;border-radius:12px;padding:13px 22px;
-  font:inherit;font-weight:700;font-size:15px;cursor:pointer;min-height:var(--tap);transition:.16s}
-.btn-hero.primary{background:var(--accent);color:#fff;border:1px solid var(--accent);
-  box-shadow:0 6px 18px rgba(14,124,134,.22)}
-.btn-hero.primary:hover{background:var(--accent-ink);transform:translateY(-2px);box-shadow:0 10px 26px rgba(14,124,134,.28)}
-.btn-hero.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)}
-.btn-hero.ghost:hover{border-color:var(--ink-2);transform:translateY(-2px)}
-.btn-hero .arrow{transition:transform .16s}
-.btn-hero.primary:hover .arrow{transform:translateX(3px)}
-
-.hero__three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.three-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
-  padding:16px 17px;position:relative;overflow:hidden;animation:cardIn .45s both}
-.three-card::before{content:attr(data-step);position:absolute;top:9px;right:13px;
-  font-family:var(--font-display);font-weight:600;font-size:30px;color:var(--paper-2);line-height:1}
-.three-card .tc-kicker{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.08em;
-  text-transform:uppercase;color:var(--accent-ink);margin-bottom:7px}
-.three-card h3{font-family:var(--font-display);font-weight:600;font-size:16px;margin:0 0 5px;letter-spacing:-.01em}
-.three-card p{margin:0 0 10px;font-size:12.5px;color:var(--muted);line-height:1.6}
-.three-card .jargon{display:inline-block;font-family:var(--font-mono);font-size:10.5px;font-weight:500;
-  color:var(--ink-2);background:var(--paper-2);border-radius:6px;padding:3px 8px}
-
-/* --- Hero schematic illustration (the visual anchor) --- */
-.hero__art{margin:2px 0 28px;background:linear-gradient(160deg,#ffffff 0%,#fbfaf5 100%);
-  border:1px solid var(--line);border-radius:18px;padding:26px 20px 22px;position:relative;overflow:hidden;
-  box-shadow:0 1px 0 rgba(255,255,255,.6) inset,0 10px 30px -18px rgba(14,124,134,.25)}
-.hero__art::before{content:"";position:absolute;inset:0;
-  background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:18px 18px;opacity:.5;pointer-events:none}
-.hero__art::after{content:"SYSTEM SCHEMA";position:absolute;top:13px;right:16px;
-  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.14em;color:var(--muted);opacity:.7}
-.hero__art svg{position:relative;display:block;width:100%;height:auto;max-width:560px;margin:0 auto}
-.schem-node{fill:#fff;stroke:var(--line-2);stroke-width:1.5}
-.schem-core{fill:var(--accent-bg);stroke:var(--accent);stroke-width:2}
-.schem-label{font-family:var(--font-sans);font-weight:700;fill:var(--ink-2);font-size:14px;text-anchor:middle}
-.schem-core .lbl,.schem-corelabel{fill:var(--accent-ink)}
-.schem-cap{font-family:var(--font-mono);fill:var(--muted);font-size:11px;text-anchor:middle}
-.schem-link{stroke:var(--line-2);stroke-width:2;fill:none}
-.schem-flow{stroke:var(--accent);stroke-width:2.4;fill:none;stroke-linecap:round;
-  stroke-dasharray:4 7;animation:schemDash 1.2s linear infinite}
-@keyframes schemDash{to{stroke-dashoffset:-22}}
-.schem-port{fill:var(--accent)}
-
-/* --- Three-card icons --- */
-.tc-icon{width:40px;height:40px;border-radius:11px;background:var(--accent-bg);
-  border:1px solid var(--accent-soft);display:grid;place-items:center;margin-bottom:13px}
-.tc-icon svg{width:21px;height:21px;stroke:var(--accent-ink);fill:none;stroke-width:1.8;
-  stroke-linecap:round;stroke-linejoin:round}
-.three-card:hover{transform:translateY(-3px);border-color:var(--line-2);
-  box-shadow:0 14px 30px -20px rgba(23,26,31,.3)}
-.three-card{transition:.18s}
-
-/* richer primary button */
-.btn-hero.primary,.cta{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-ink) 100%)}
-
-/* --- Generic beginner intro band --- */
-.guide-intro{padding:22px 24px;background:var(--surface);border:1px solid var(--line);
-  border-left:3px solid var(--accent);border-radius:var(--r);margin-bottom:18px}
-.guide-intro h2{font-family:var(--font-display);font-weight:600;margin:0 0 8px;font-size:clamp(21px,3.4vw,26px);letter-spacing:-.015em}
-.guide-intro p{margin:0;color:var(--ink-2);font-size:14.5px;max-width:740px;line-height:1.7}
-.guide-intro .lead-note{margin-top:10px;font-size:13px;color:var(--muted)}
-
-/* --- "はじめに" intro view --- */
-.intro-block{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px;margin-bottom:14px}
-.intro-block h3{font-family:var(--font-display);font-weight:600;margin:0 0 12px;font-size:18px;letter-spacing:-.01em}
-.intro-block > p{margin:0 0 6px;color:var(--ink-2);font-size:14.5px;line-height:1.8;max-width:760px}
-.intro-callout{margin-top:14px;background:var(--accent-bg);border:1px solid var(--accent-soft);border-radius:12px;
-  padding:15px 17px}
-.intro-callout p{margin:0 0 12px;color:var(--accent-ink);font-size:14px;font-weight:600;line-height:1.7}
-.intro-callout p:last-child{margin:0}
-
-/* comparison table */
-.cmp-table{width:100%;border-collapse:separate;border-spacing:0;margin-top:6px;font-size:13.5px;
-  border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.cmp-table th,.cmp-table td{padding:12px 14px;text-align:left;vertical-align:top;line-height:1.6}
-.cmp-table thead th{background:var(--ink);color:#fff;font-weight:700;font-size:13px}
-.cmp-table thead th:first-child{background:var(--ink-2)}
-.cmp-table tbody th{background:var(--paper-2);color:var(--ink);font-weight:700;width:108px;font-size:12.5px}
-.cmp-table tbody td{background:var(--surface);color:var(--ink-2);border-top:1px solid var(--line)}
-.cmp-table tbody td.is-agent{color:var(--ink);font-weight:600}
-.cmp-table thead th:nth-child(3){position:relative}
-.cmp-wrap{overflow-x:auto}
-
-/* three-things rows in intro */
-.tt-rows{display:grid;gap:10px;margin-top:6px}
-.tt-row{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;background:var(--paper-2);
-  border:1px solid var(--line);border-radius:11px;padding:13px 15px}
-.tt-row .tt-num{width:30px;height:30px;border-radius:8px;background:var(--ink);color:#fff;display:grid;place-items:center;
-  font-family:var(--font-display);font-weight:600;font-size:15px}
-.tt-row .tt-main{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink)}
-.tt-row .tt-jargon{display:block;font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
-
-/* --- Difficulty badge --- */
-.diff{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;border-radius:999px;
-  padding:3px 10px;border:1px solid transparent;line-height:1.4}
-.diff::before{content:"";width:7px;height:7px;border-radius:999px;background:currentColor;opacity:.85}
-.diff--low{color:#15803d;background:var(--rec-bg)}
-.diff--mid{color:var(--warn);background:var(--warn-bg)}
-.diff--high{color:var(--no);background:var(--no-bg)}
-
-/* --- Usecase cards (enhanced) --- */
-.uc-card{display:flex;flex-direction:column}
-.uc-card .uc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px}
-.uc-card .uc-id{display:flex;align-items:center;gap:9px;min-width:0}
-.uc-card .uc-icon{width:32px;height:32px;border-radius:9px;background:var(--accent-bg);border:1px solid var(--accent-soft);display:grid;place-items:center;flex:0 0 auto}
-.uc-card .uc-icon svg{width:17px;height:17px;stroke:var(--accent-ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.uc-card .uc-cat{font-family:var(--font-mono);font-size:10.5px;font-weight:500;color:var(--muted);letter-spacing:.04em}
-.uc-card .uc-desc{margin:2px 0 12px;color:var(--ink-2);font-size:13px;line-height:1.65;flex:0 0 auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.uc-card .uc-needs{margin:0 0 14px}
-.uc-card .uc-needs .needs-cap{font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.07em;
-  text-transform:uppercase;color:var(--muted);display:block;margin-bottom:6px}
-.uc-needs .chips{display:flex;gap:5px;flex-wrap:wrap}
-.uc-needs .chip{font-size:11px;font-weight:600;color:var(--ink-2);background:var(--paper-2);border:1px solid var(--line);
-  border-radius:7px;padding:3px 9px}
-.uc-card .uc-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding-top:12px;border-top:1px solid var(--line)}
-.uc-card .uc-go{display:inline-flex;align-items:center;gap:6px;background:var(--ink);color:#fff;border:0;border-radius:9px;
-  padding:9px 13px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;transition:.15s;min-height:38px}
-.uc-card:hover .uc-go{background:var(--accent)}
-.uc-card .uc-go .arrow{transition:transform .15s}
-.uc-card:hover .uc-go .arrow{transform:translateX(3px)}
-
-/* --- Usecase DETAIL page --- */
-.ucd-head{margin-bottom:16px}
-.ucd-badges{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0 0}
-.ucd h2{font-family:var(--font-display);font-weight:600;margin:10px 0 8px;font-size:clamp(25px,4.4vw,36px);letter-spacing:-.02em;line-height:1.1}
-.ucd .ucd-lead{color:var(--ink-2);font-size:15.5px;max-width:740px;line-height:1.75}
-.ucd-section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px 24px;margin-bottom:14px}
-.ucd-section > h3{font-family:var(--font-display);font-weight:600;margin:0 0 4px;font-size:19px;letter-spacing:-.01em}
-.ucd-section > .sec-sub{margin:0 0 16px;font-size:13px;color:var(--muted)}
-
-/* flow steps */
-.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
-.flow-step{flex:1 1 150px;min-width:140px;background:var(--paper-2);border:1px solid var(--line);border-radius:12px;
-  padding:14px;position:relative}
-.flow-step .fs-num{width:26px;height:26px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;
-  font-family:var(--font-display);font-weight:600;font-size:13px;margin-bottom:9px}
-.flow-step .fs-title{font-family:var(--font-display);font-weight:600;font-size:14px;color:var(--ink);margin-bottom:3px}
-.flow-step .fs-desc{font-size:11.5px;color:var(--muted);line-height:1.55}
-.flow-arrow{align-self:center;color:var(--line-2);font-size:18px;flex:0 0 auto}
-
-/* recommended config trio */
-.rec-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.rec-cfg{background:var(--paper-2);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column}
-.rec-cfg .rc-tag{align-self:flex-start;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.05em;
-  padding:3px 8px;border-radius:6px;margin-bottom:10px}
-.rec-cfg.is-a .rc-tag{background:var(--rec-bg);color:var(--rec)}
-.rec-cfg.is-m .rc-tag{background:var(--warn-bg);color:var(--warn)}
-.rec-cfg.is-t .rc-tag{background:var(--accent-bg);color:var(--accent-ink)}
-.rec-cfg .rc-plain{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--ink);margin-bottom:6px;line-height:1.4}
-.rec-cfg .rc-body{font-size:12.5px;color:var(--ink-2);line-height:1.6;margin-bottom:12px;flex:1}
-.rec-cfg .rc-jargon{font-family:var(--font-mono);font-size:10.5px;color:var(--muted);background:var(--surface);
-  border:1px solid var(--line);border-radius:7px;padding:5px 9px;line-height:1.5}
-.rec-cfg .rc-jargon b{color:var(--ink-2);font-weight:700}
-.rec-cfg .rc-link{margin-top:9px}
-
-/* minimal config */
-.mvp{background:var(--accent-bg);border:1px solid var(--accent-soft);border-left:3px solid var(--accent)}
-.mvp .mvp-banner{display:inline-flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px;color:var(--accent-ink);
-  background:var(--surface);border:1px solid var(--accent-soft);border-radius:999px;padding:6px 14px;margin-bottom:14px}
-.mvp ol{margin:0;padding:0;list-style:none;counter-reset:mvp;display:grid;gap:8px}
-.mvp ol li{counter-increment:mvp;display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:start;
-  background:var(--surface);border:1px solid var(--accent-soft);border-radius:10px;padding:11px 14px;font-size:13.5px;color:var(--ink)}
-.mvp ol li::before{content:counter(mvp);width:24px;height:24px;border-radius:7px;background:var(--accent);color:#fff;
-  display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:12px}
-.mvp .mvp-foot{margin:13px 0 0;font-size:12.5px;color:var(--accent-ink);line-height:1.65}
-.mvp .mvp-later{margin-top:12px}
-.mvp .mvp-later .later-cap{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.04em;display:block;margin-bottom:7px}
-.mvp .mvp-later .chips{display:flex;gap:6px;flex-wrap:wrap}
-.mvp .mvp-later .chip{font-size:11.5px;color:var(--ink-2);background:var(--surface);border:1px dashed var(--line-2);border-radius:7px;padding:4px 10px}
-
-/* caution (formerly risk) */
-.caution-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
-.caution-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.caution-card .cc-risk{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:13px 15px;align-items:start}
-.caution-card .cc-ctl{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:13px 15px;align-items:start;
-  border-top:1px solid var(--line);background:var(--paper-2)}
-.caution-card .cc-ico{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:13px;font-weight:700}
-.caution-card .cc-risk .cc-ico{background:var(--warn-bg);color:var(--warn)}
-.caution-card .cc-ctl .cc-ico{background:var(--rec-bg);color:var(--rec)}
-.caution-card .cc-label{font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
-  display:block;margin-bottom:3px}
-.caution-card .cc-risk .cc-label{color:var(--warn)}
-.caution-card .cc-ctl .cc-label{color:var(--rec)}
-.caution-card .cc-text{margin:0;font-size:13px;line-height:1.65;color:var(--ink)}
-.caution-card .cc-ctl .cc-text{color:var(--ink-2)}
-
-/* next steps */
-.next-list{display:grid;gap:9px}
-.next-item{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;background:var(--paper-2);
-  border:1px solid var(--line);border-radius:10px;padding:12px 15px;font-size:13.5px;color:var(--ink)}
-.next-item .ni-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--line-2);flex:0 0 auto}
-
-/* CTA row at bottom of detail */
-.ucd-cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
-
-/* collapsible details */
-.disclose{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-top:12px;overflow:hidden}
-.disclose > summary{list-style:none;cursor:pointer;padding:14px 18px;font-weight:700;font-size:14px;color:var(--ink);
-  display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:var(--font-display)}
-.disclose > summary::-webkit-details-marker{display:none}
-.disclose > summary .ds-hint{font-family:var(--font-sans);font-size:12px;font-weight:500;color:var(--muted)}
-.disclose > summary::after{content:"＋";font-size:17px;color:var(--accent-ink);font-weight:700;transition:transform .2s}
-.disclose[open] > summary::after{content:"−"}
-.disclose > summary:hover{background:var(--paper-2)}
-.disclose__body{padding:4px 18px 18px}
-.disclose__body .section{box-shadow:none}
-
-/* --- Builder mode toggle + wizard --- */
-.mode-toggle{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:11px;
-  padding:4px;margin-bottom:16px;box-shadow:var(--shadow-sm)}
-.mode-toggle button{border:0;background:transparent;padding:10px 18px;font:inherit;font-weight:700;font-size:13px;
-  cursor:pointer;border-radius:8px;color:var(--ink-2);min-height:40px;transition:.15s;display:inline-flex;align-items:center;gap:7px}
-.mode-toggle button.active{background:var(--ink);color:#fff}
-.mode-toggle button .mt-sub{font-weight:500;font-size:11px;opacity:.8}
-
-.wizard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:24px clamp(16px,3vw,28px);box-shadow:var(--shadow-sm)}
-.wiz-progress{display:flex;gap:6px;margin-bottom:22px}
-.wiz-progress .wp{flex:1;height:5px;border-radius:999px;background:var(--paper-2);transition:.25s}
-.wiz-progress .wp.done{background:var(--accent)}
-.wiz-progress .wp.cur{background:var(--accent-ink)}
-.wiz-step .wz-kicker{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink)}
-.wiz-step h3{font-family:var(--font-display);font-weight:600;font-size:clamp(20px,3.4vw,25px);margin:8px 0 4px;letter-spacing:-.015em}
-.wiz-step .wz-note{margin:0 0 18px;color:var(--muted);font-size:13px}
-.wiz-opts{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
-.wiz-opt{text-align:left;background:var(--paper-2);border:1.5px solid var(--line);border-radius:12px;padding:15px 16px;
-  font:inherit;cursor:pointer;transition:.15s;display:flex;flex-direction:column;gap:4px;min-height:var(--tap)}
-.wiz-opt:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow)}
-.wiz-opt.sel{border-color:var(--accent);background:var(--accent-bg)}
-.wiz-opt .wo-title{font-weight:700;font-size:14px;color:var(--ink)}
-.wiz-opt .wo-desc{font-size:11.5px;color:var(--muted);line-height:1.5}
-.wiz-opt.sel .wo-title{color:var(--accent-ink)}
-.wiz-nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
-.wiz-result-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
-.wiz-result-head .pill{font-size:12px}
-
-/* skeleton loading */
-.skeleton-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:16px}
-.sk-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:18px;height:188px}
-.sk-line{height:11px;border-radius:6px;background:linear-gradient(90deg,var(--paper-2) 25%,#e9e5db 37%,var(--paper-2) 63%);
-  background-size:400% 100%;animation:shimmer 1.4s ease infinite;margin-bottom:11px}
-.sk-line.w40{width:40%}.sk-line.w70{width:70%}.sk-line.w90{width:90%}.sk-line.w55{width:55%}
-.sk-line.tall{height:20px;margin-bottom:16px}
-@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
-
-/* error banner (non-destructive) */
-.err-banner{margin:14px 0;padding:16px 18px;background:var(--no-bg);border:1px solid #f0c5be;border-left:3px solid var(--no);
-  border-radius:12px;color:#8a261a}
-.err-banner h4{margin:0 0 5px;font-family:var(--font-display);font-weight:600;font-size:15px}
-.err-banner p{margin:0;font-size:13px;line-height:1.6}
-.err-banner details{margin-top:9px;font-size:12px}
-.err-banner summary{cursor:pointer;font-weight:700}
-.err-banner pre{margin:7px 0 0;white-space:pre-wrap;font-size:11px;color:#6b1d12;font-family:var(--font-mono)}
-
-/* responsive for beginner layer */
-@media(max-width:900px){
-  .hero__three{grid-template-columns:1fr}
-  .rec-trio{grid-template-columns:1fr}
-}
-@media(max-width:760px){
-  .wiz-opts{grid-template-columns:1fr}
-  .flow{flex-direction:column}
-  .flow-step{min-width:0}
-  .flow-arrow{transform:rotate(90deg)}
-  .hero__cta .btn-hero{flex:1 1 auto;justify-content:center}
-}
-
-/* reduced motion (#4) */
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
-    transition-duration:.001ms!important;scroll-behavior:auto!important}
-  .uc-card:hover,.card:hover,.rc-pair:hover,.cell:hover,.wiz-opt:hover,.three-card:hover{transform:none}
-  .sk-line{animation:none;background:var(--paper-2)}
-}
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: 'Zen Kaku Gothic New', system-ui, sans-serif;
+    color: #18170F;
+    background: #F4F1E9;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  ::selection { background: #1B3CCB; color: #F4F1E9; }
+  a { color: inherit; }
+  .mincho { font-family: 'Shippori Mincho B1', serif; }
+  .mono { font-family: 'Space Mono', monospace; }
+  :focus-visible { outline: 2px solid #1B3CCB; outline-offset: 3px; }
+
+  /* --- Responsive (desktop の見た目はそのまま、狭幅で破綻させない) --- */
+  @media (max-width: 880px) {
+    .wrap { padding-left: 24px !important; padding-right: 24px !important; }
+    .nav-links { gap: 18px !important; overflow-x: auto; }
+    .hero-grid, .prod-grid, .risk-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+    .steps-grid { grid-template-columns: 1fr 1fr !important; }
+    .hero-h1 { white-space: normal !important; }
+    .prod-right { border-top: 1px solid #18170F; }
+  }
+  @media (max-width: 520px) {
+    .steps-grid { grid-template-columns: 1fr !important; }
+    .risk-grid-12 { grid-template-columns: 1fr !important; }
+  }
 </style>
 </head>
 <body>
-<a class="skip-link" href="#main">コンテンツへスキップ</a>
 
-<!-- Brand bar — プラットフォーム名/ロゴ/CTA は差し替えてください -->
-<header class="brandbar">
-  <a class="brand" href="#usecases" aria-label="はじめてのAIエージェント設計ガイド ホーム">
-    <span class="brand__mark" aria-hidden="true">A</span>
-    <span class="brand__name">Agent&nbsp;Platform</span>
-    <span class="brand__tag">設計ガイド</span>
-  </a>
-  <div class="toolbar">
-    <a class="icon-btn" href="security.html" aria-label="AIセキュリティ評価スイートを開く">🛡 セキュリティ評価</a>
-    <button class="icon-btn" id="shareBtn" type="button" aria-label="現在の表示のURLをコピー">🔗 共有</button>
-    <button class="cta" id="heroCtaTop" type="button" data-nav="usecases">作りたいAIを選ぶ</button>
+<header style="position:sticky;top:0;z-index:100;background:rgba(244,241,233,0.9);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid #18170F;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:0 48px;height:74px;display:flex;align-items:center;justify-content:space-between;gap:24px;">
+    <a href="./" style="display:flex;align-items:baseline;gap:13px;white-space:nowrap;text-decoration:none;">
+      <span class="mincho" style="font-weight:800;font-size:23px;letter-spacing:0.04em;color:#18170F;">GUILD</span>
+      <span class="mono" style="font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#8E8B7E;">Agent Platform</span>
+    </a>
+    <nav class="nav-links" style="display:flex;align-items:center;gap:32px;white-space:nowrap;">
+      <a href="#product" style="font-size:13.5px;color:#57544A;text-decoration:none;font-weight:500;">製品</a>
+      <a href="#usecases" style="font-size:13.5px;color:#57544A;text-decoration:none;font-weight:500;">作れるAI</a>
+      <a href="guide.html" style="font-size:13.5px;color:#57544A;text-decoration:none;font-weight:500;">仕組み</a>
+      <a href="#risk" style="font-size:13.5px;color:#57544A;text-decoration:none;font-weight:500;">リスク評価</a>
+      <a href="guide.html" style="font-size:13.5px;color:#1B3CCB;text-decoration:none;font-weight:700;border-bottom:2px solid #1B3CCB;padding-bottom:3px;">無料ではじめる</a>
+    </nav>
   </div>
 </header>
 
-<main class="app" id="main">
-
-  <header class="head hero">
-    <span class="eyebrow">AI Agent Design Guide</span>
-    <h1>はじめての<br>AIエージェント設計ガイド</h1>
-    <p class="hero__sub">作りたいAIを選ぶだけで、おすすめの設計がわかります。用語は後回しでOK。</p>
-    <div class="hero__cta">
-      <button class="btn-hero primary" type="button" data-nav="usecases">作りたいAIを選ぶ <span class="arrow" aria-hidden="true">→</span></button>
-      <button class="btn-hero ghost" type="button" data-nav="intro">AIエージェントの基本を見る</button>
+<section style="background:#F4F1E9;position:relative;overflow:hidden;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:88px 48px 0;position:relative;">
+    <div style="margin-bottom:40px;">
+      <span class="mono" style="font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#8E8B7E;">AI Agent Platform</span>
     </div>
-    <div class="hero__art" role="img" aria-label="AIエージェントの仕組み：入力を受け取り、記憶とツールを使いながら処理し、結果を出力する">
-      <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg">
-        <!-- links -->
-        <path class="schem-link" d="M120 70 H210"/>
-        <path class="schem-link" d="M350 70 H440"/>
-        <path class="schem-link" d="M280 108 V150"/>
-        <path class="schem-link" d="M210 150 H350"/>
-        <!-- animated flow on the main spine -->
-        <path class="schem-flow" d="M120 70 H210"/>
-        <path class="schem-flow" d="M350 70 H440"/>
-        <!-- input -->
-        <g><rect class="schem-node" x="20" y="48" width="100" height="44" rx="11"/>
-          <text class="schem-label" x="70" y="75">入力</text></g>
-        <!-- core agent -->
-        <g class="schem-core-g"><rect class="schem-core" x="210" y="40" width="140" height="60" rx="14"/>
-          <text class="schem-label schem-corelabel" x="280" y="66">AIエージェント</text>
-          <text class="schem-cap" x="280" y="86" style="fill:var(--accent-ink);opacity:.75">考えて作業する</text></g>
-        <!-- output -->
-        <g><rect class="schem-node" x="440" y="48" width="100" height="44" rx="11"/>
-          <text class="schem-label" x="490" y="75">出力</text></g>
-        <!-- memory -->
-        <g><rect class="schem-node" x="150" y="150" width="120" height="42" rx="11"/>
-          <text class="schem-label" x="210" y="176" style="font-size:13px">記憶（メモリ）</text></g>
-        <!-- tools -->
-        <g><rect class="schem-node" x="290" y="150" width="120" height="42" rx="11"/>
-          <text class="schem-label" x="350" y="176" style="font-size:13px">ツール</text></g>
-        <!-- ports -->
-        <circle class="schem-port" cx="210" cy="70" r="3.5"/>
-        <circle class="schem-port" cx="350" cy="70" r="3.5"/>
-        <circle class="schem-port" cx="280" cy="100" r="3.5"/>
-      </svg>
-    </div>
-    <div class="hero__three">
-      <article class="three-card" data-step="1" style="animation-delay:40ms">
-        <div class="tc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="12" r="2.4"/><path d="M8.2 7.2 15.8 11"/><path d="M8.2 16.8 15.8 13"/></svg></div>
-        <span class="tc-kicker">設計で決めること ①</span>
-        <h3>AIをどう動かすか</h3>
-        <p>処理の順番と役割分担。</p>
-        <span class="jargon">専門用語：エージェント構成</span>
-      </article>
-      <article class="three-card" data-step="2" style="animation-delay:120ms">
-        <div class="tc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div>
-        <span class="tc-kicker">設計で決めること ②</span>
-        <h3>AIに何を覚えさせるか</h3>
-        <p>会話・状態・社内知識など。</p>
-        <span class="jargon">専門用語：メモリ設計</span>
-      </article>
-      <article class="three-card" data-step="3" style="animation-delay:200ms">
-        <div class="tc-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 7V3"/><path d="M15 7V3"/><path d="M6 7h12v4a6 6 0 0 1-12 0z"/><path d="M12 17v4"/></svg></div>
-        <span class="tc-kicker">設計で決めること ③</span>
-        <h3>AIに何を使わせるか</h3>
-        <p>検索・API・社内DBなど。</p>
-        <span class="jargon">専門用語：ツールユース</span>
-      </article>
-    </div>
-  </header>
-
-  <nav class="topnav" id="topnav" aria-label="ビュー切替">
-    <button data-mode="intro" type="button">はじめに</button>
-    <button data-mode="usecases" type="button">作りたいAIを選ぶ</button>
-    <button data-mode="builder" type="button">設計を組み立てる</button>
-    <button data-mode="search" type="button">パターン一覧</button>
-    <button data-mode="matrix" type="button">詳細比較</button>
-  </nav>
-
-  <!-- === Intro View (はじめに) === -->
-  <section id="introView" class="view">
-    <div class="guide-intro">
-      <h2>はじめに：AIエージェントの基本</h2>
-      <p>作る前に知っておきたい基本を、3分でつかめます。</p>
-    </div>
-
-    <div class="intro-block">
-      <h3>AIエージェントとは？</h3>
-      <p>目的に向かって自分で手順を進め、必要に応じて記憶や外部ツールを使うAIです。答えるだけでなく「作業を進める」のが特徴です。</p>
-    </div>
-
-    <div class="intro-block">
-      <h3>普通のチャットAIとの違い</h3>
-      <div class="cmp-wrap">
-      <table class="cmp-table">
-        <thead><tr><th>項目</th><th>チャットAI</th><th>AIエージェント</th></tr></thead>
-        <tbody>
-          <tr><th>役割</th><td>質問に答える</td><td class="is-agent">目的達成まで作業する</td></tr>
-          <tr><th>記憶</th><td>会話が中心</td><td class="is-agent">状態や履歴を扱う</td></tr>
-          <tr><th>外部連携</th><td>少ない</td><td class="is-agent">API・DB・検索などを使う</td></tr>
-          <tr><th>向くこと</th><td>単発の相談</td><td class="is-agent">業務フローの自動化</td></tr>
-        </tbody>
-      </table>
+    <h1 class="mincho hero-h1" style="margin:0;font-weight:600;font-size:clamp(40px,5.6vw,68px);line-height:1.1;letter-spacing:-0.02em;color:#18170F;white-space:nowrap;">つくって、動かして、</h1>
+    <h1 class="mincho hero-h1" style="margin:8px 0 0;font-weight:600;font-size:clamp(40px,5.6vw,68px);line-height:1.1;letter-spacing:-0.02em;color:#18170F;white-space:nowrap;">リスクまで<span style="color:#1B3CCB;font-style:italic;">見極める。</span></h1>
+    <div class="hero-grid" style="display:grid;grid-template-columns:1fr 0.86fr;gap:56px;align-items:end;margin-top:52px;padding-bottom:72px;">
+      <p style="margin:0;max-width:480px;font-size:20px;line-height:1.8;color:#57544A;">やりたいことを選ぶだけ。<strong style="color:#18170F;font-weight:700;">動かす前にリスクまで評価できる</strong>、AIエージェント開発プラットフォーム。</p>
+      <div style="display:flex;align-items:center;gap:26px;justify-self:start;flex-wrap:wrap;">
+        <a href="guide.html" style="display:inline-flex;align-items:center;gap:10px;background:#1B3CCB;color:#F4F1E9;text-decoration:none;padding:18px 30px;font-weight:700;font-size:16px;">無料ではじめる<span class="mono">→</span></a>
+        <a href="#build" style="font-size:16px;font-weight:700;color:#18170F;text-decoration:none;border-bottom:2px solid #18170F;padding-bottom:3px;">製品デモを見る</a>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="intro-block">
-      <h3>設計で決める3つのこと</h3>
-      <div class="tt-rows">
-        <div class="tt-row"><span class="tt-num">1</span><div><span class="tt-main">AIをどう動かすか</span><span class="tt-jargon">専門用語：エージェント構成</span></div></div>
-        <div class="tt-row"><span class="tt-num">2</span><div><span class="tt-main">AIに何を覚えさせるか</span><span class="tt-jargon">専門用語：メモリ設計</span></div></div>
-        <div class="tt-row"><span class="tt-num">3</span><div><span class="tt-main">AIに何を使わせるか</span><span class="tt-jargon">専門用語：ツールユース</span></div></div>
+<section id="product" style="border-top:1px solid #18170F;border-bottom:1px solid #18170F;background:#EFEBE0;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:64px 48px;">
+    <div style="border:1px solid #18170F;background:#F4F1E9;">
+      <div style="display:flex;align-items:center;gap:14px;padding:13px 20px;border-bottom:1px solid #18170F;background:#EFEBE0;flex-wrap:wrap;">
+        <div style="display:flex;gap:7px;"><span style="width:11px;height:11px;border:1px solid #18170F;border-radius:50%;"></span><span style="width:11px;height:11px;border:1px solid #18170F;border-radius:50%;"></span><span style="width:11px;height:11px;border:1px solid #18170F;border-radius:50%;"></span></div>
+        <span class="mono" style="font-size:13px;color:#57544A;">guild.studio / 問い合わせ対応エージェント</span>
+        <span class="mono" style="margin-left:auto;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8E8B7E;border:1px solid #C9C4B6;padding:3px 10px;">下書き</span>
       </div>
-    </div>
-
-    <div class="intro-block">
-      <h3>まずは作りたいAIを選ぶ</h3>
-      <p>構成名から覚える必要はありません。「作りたいAI」を選べば、合った設計（動かし方・記憶・連携）が分かります。</p>
-      <div class="intro-callout">
-        <p>作りたい業務をひとつ思い浮かべて、次へ進みましょう。</p>
-        <button class="btn-hero primary" type="button" data-nav="usecases">作りたいAIを選ぶ <span class="arrow" aria-hidden="true">→</span></button>
-      </div>
-    </div>
-  </section>
-
-  <!-- === Usecases View (作りたいAIを選ぶ) === -->
-  <section id="usecasesView" class="view active">
-    <div class="guide-intro">
-      <h2>作りたいAIを選ぶ</h2>
-      <p>近いものをひとつ選んでください。カードを開くと、おすすめ設計・最小構成・注意点までわかります。</p>
-      <div class="tagrow" id="tagRow"></div>
-    </div>
-    <div id="ucGrid" class="uc-grid">
-      <div class="skeleton-grid" id="ucSkeleton" aria-hidden="true">
-        <div class="sk-card"><div class="sk-line w40"></div><div class="sk-line tall w70"></div><div class="sk-line w90"></div><div class="sk-line w55"></div></div>
-        <div class="sk-card"><div class="sk-line w40"></div><div class="sk-line tall w70"></div><div class="sk-line w90"></div><div class="sk-line w55"></div></div>
-        <div class="sk-card"><div class="sk-line w40"></div><div class="sk-line tall w70"></div><div class="sk-line w90"></div><div class="sk-line w55"></div></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- === Usecase Detail View (用途別おすすめ構成) === -->
-  <section id="ucDetailView" class="view"></section>
-
-  <!-- === Search View (パターン一覧) === -->
-  <section id="searchView" class="view">
-    <div class="guide-intro">
-      <h2>パターン一覧</h2>
-      <p>もっと学びたい人向けに、設計パターンを一覧で確認できます。構成・メモリ・ツールで切り替えられます。</p>
-      <p class="lead-note">はじめての方は「作りたいAIを選ぶ」からどうぞ。</p>
-    </div>
-    <div class="filterbar">
-      <button class="btn" id="openFilters" type="button" aria-expanded="false" aria-controls="filterPanel">⚙ フィルター</button>
-      <span class="count-inline" id="countInline">0件</span>
-    </div>
-    <div class="search-layout">
-      <div class="drawer-overlay" id="filterOverlay"></div>
-      <aside class="panel" id="filterPanel" aria-label="検索フィルター">
-        <div class="panel__head"><strong>フィルター</strong>
-          <button class="drawer-close" id="closeFilters" type="button" aria-label="フィルターを閉じる">×</button>
+      <div class="prod-grid" style="display:grid;grid-template-columns:1.5fr 1fr;">
+        <div style="padding:34px 36px;border-right:1px solid #18170F;">
+          <div class="mono" style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8B7E;margin-bottom:24px;">構成キャンバス</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-start;">
+            <div style="border:1px solid #18170F;background:#F4F1E9;padding:14px 18px;min-width:300px;max-width:100%;">
+              <div class="mono" style="font-size:10.5px;letter-spacing:0.12em;color:#8E8B7E;">ROLE — 役割</div>
+              <div style="font-size:16px;font-weight:700;margin-top:5px;">カスタマーサポート 一次対応</div>
+            </div>
+            <div style="width:1px;height:22px;background:#18170F;margin-left:24px;"></div>
+            <div style="border:1.5px solid #1B3CCB;background:#F4F1E9;padding:14px 18px;min-width:300px;max-width:100%;box-shadow:5px 5px 0 rgba(27,60,203,0.18);">
+              <div class="mono" style="font-size:10.5px;letter-spacing:0.12em;color:#1B3CCB;">STRUCTURE — 構成</div>
+              <div style="font-size:16px;font-weight:700;margin-top:5px;">単体 ＋ 検索拡張</div>
+              <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+                <span style="font-size:11px;color:#57544A;border:1px solid #C9C4B6;padding:2px 8px;">単体</span>
+                <span style="font-size:11px;color:#57544A;border:1px solid #C9C4B6;padding:2px 8px;">順次</span>
+                <span style="font-size:11px;color:#57544A;border:1px solid #C9C4B6;padding:2px 8px;">サブ</span>
+                <span style="font-size:11px;color:#57544A;border:1px solid #C9C4B6;padding:2px 8px;">協調</span>
+              </div>
+            </div>
+            <div style="width:1px;height:22px;background:#18170F;margin-left:24px;"></div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+              <div style="border:1px solid #18170F;background:#F4F1E9;padding:14px 18px;">
+                <div class="mono" style="font-size:10.5px;letter-spacing:0.12em;color:#8E8B7E;">MEMORY — 記憶</div>
+                <div style="font-size:15px;font-weight:700;margin-top:5px;">会話履歴 / FAQ</div>
+              </div>
+              <div style="border:1px solid #18170F;background:#F4F1E9;padding:14px 18px;">
+                <div class="mono" style="font-size:10.5px;letter-spacing:0.12em;color:#8E8B7E;">SKILL — スキル</div>
+                <div style="font-size:15px;font-weight:700;margin-top:5px;">検索 · 起票</div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="tabs" role="tablist" aria-label="カタログの種類">
-          <button class="tab" type="button" role="tab" aria-selected="false" data-domain="agent">動かし方（構成）</button>
-          <button class="tab" type="button" role="tab" aria-selected="false" data-domain="tool">使うツール</button>
-          <button class="tab" type="button" role="tab" aria-selected="false" data-domain="memory">記憶（メモリ）</button>
+        <div class="prod-right" style="padding:34px 32px;background:#EFEBE0;">
+          <div class="mono" style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8B7E;margin-bottom:22px;">リスク評価</div>
+          <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #C9C4B6;padding-bottom:20px;">
+            <span class="mincho" style="font-size:64px;font-weight:800;line-height:0.9;color:#1B3CCB;">B</span>
+            <div>
+              <div style="font-size:15px;font-weight:700;color:#18170F;">リスク 中程度</div>
+              <div style="font-size:13px;color:#8E8B7E;margin-top:3px;">公開前に2点の確認を推奨</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px;margin-top:20px;">
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:500;margin-bottom:6px;"><span>情報の取り扱い</span><span class="mono" style="color:#4D7C0F;">低</span></div>
+              <div style="height:4px;background:#D6D1C4;"><div style="width:24%;height:4px;background:#4D7C0F;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:500;margin-bottom:6px;"><span>出力の信頼性</span><span class="mono" style="color:#B45309;">中</span></div>
+              <div style="height:4px;background:#D6D1C4;"><div style="width:58%;height:4px;background:#B45309;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:500;margin-bottom:6px;"><span>権限と操作範囲</span><span class="mono" style="color:#B45309;">要確認</span></div>
+              <div style="height:4px;background:#D6D1C4;"><div style="width:50%;height:4px;background:#B45309;"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13.5px;font-weight:500;margin-bottom:6px;"><span>コスト・負荷</span><span class="mono" style="color:#4D7C0F;">低</span></div>
+              <div style="height:4px;background:#D6D1C4;"><div style="width:20%;height:4px;background:#4D7C0F;"></div></div>
+            </div>
+          </div>
+          <a href="ai_security_assessment.html#dashboard" style="text-decoration:none;margin-top:26px;display:flex;align-items:center;justify-content:center;gap:9px;background:#18170F;color:#F4F1E9;padding:13px;font-weight:700;font-size:14px;">評価して公開<span class="mono">→</span></a>
         </div>
-        <div class="field"><label for="q">キーワード検索</label><input id="q" type="search" placeholder="例: supervisor, MCP, RAG, 監査" /></div>
-        <div class="field"><label for="category">大分類</label><select id="category"></select></div>
-        <div class="field"><label for="placement" id="placementLabel">配置 / 通信様式</label><select id="placement"></select></div>
-        <div class="field"><label for="memory">メモリ / 状態</label><select id="memory"></select></div>
-        <div class="field"><label for="memoryFamily">メモリ大分類</label><select id="memoryFamily"></select></div>
-        <div class="field"><label for="role">役割</label><select id="role"></select></div>
-        <button id="reset" class="btn" type="button">フィルターをリセット</button>
-      </aside>
-      <section>
-        <div class="stats">
-          <span class="pill blue" id="domainLabel">エージェント構成</span>
-          <span class="pill" id="count" role="status" aria-live="polite">0件</span>
-          <span class="pill gray">カードをタップで詳細</span>
-        </div>
-        <div id="cards" class="list"></div>
-      </section>
+      </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- === Matrix View (詳細比較) === -->
-  <section id="matrixView" class="view">
-    <div class="guide-intro">
-      <h2>詳細比較</h2>
-      <p>構成と、メモリ・ツールの相性を5段階で比較できます。検討が進んだ方向けの機能です。</p>
-      <p class="lead-note">セルをタップすると、その組み合わせを「設計を組み立てる」で開けます。</p>
+<section style="background:#F4F1E9;border-bottom:1px solid #18170F;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:0 48px;display:flex;flex-wrap:wrap;">
+    <span style="flex:1;min-width:200px;padding:22px 0;border-right:1px solid #D6D1C4;font-size:14px;font-weight:700;color:#18170F;text-align:center;">役割から構成を提案</span>
+    <span style="flex:1;min-width:200px;padding:22px 0;border-right:1px solid #D6D1C4;font-size:14px;font-weight:700;color:#18170F;text-align:center;">メモリ・スキル接続</span>
+    <span style="flex:1;min-width:200px;padding:22px 0;border-right:1px solid #D6D1C4;font-size:14px;font-weight:700;color:#1B3CCB;text-align:center;">リスクを自動評価</span>
+    <span style="flex:1;min-width:200px;padding:22px 0;font-size:14px;font-weight:700;color:#18170F;text-align:center;">ワンクリック公開</span>
+  </div>
+</section>
+
+<section id="usecases" style="background:#F4F1E9;border-bottom:1px solid #18170F;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:96px 48px;">
+    <h2 class="mincho" style="margin:0 0 8px;font-weight:600;font-size:44px;line-height:1.15;letter-spacing:-0.02em;color:#18170F;">作れるAI</h2>
+
+    <div style="border-top:1px solid #18170F;margin-top:40px;">
+      <a href="guide.html" style="text-decoration:none;display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:24px;padding:26px 8px;border-bottom:1px solid #D6D1C4;">
+        <span class="mono" style="font-size:13px;color:#8E8B7E;">01</span>
+        <span class="mincho" style="font-size:28px;font-weight:600;color:#18170F;letter-spacing:-0.01em;">問い合わせ対応</span>
+      </a>
+      <a href="guide.html" style="text-decoration:none;display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:24px;padding:26px 8px;border-bottom:1px solid #D6D1C4;">
+        <span class="mono" style="font-size:13px;color:#8E8B7E;">02</span>
+        <span class="mincho" style="font-size:28px;font-weight:600;color:#18170F;letter-spacing:-0.01em;">社内ナレッジ検索</span>
+      </a>
+      <a href="guide.html" style="text-decoration:none;display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:24px;padding:26px 8px;border-bottom:1px solid #D6D1C4;">
+        <span class="mono" style="font-size:13px;color:#8E8B7E;">03</span>
+        <span class="mincho" style="font-size:28px;font-weight:600;color:#18170F;letter-spacing:-0.01em;">議事録・要約</span>
+      </a>
+      <a href="guide.html" style="text-decoration:none;display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:24px;padding:26px 8px;border-bottom:1px solid #D6D1C4;">
+        <span class="mono" style="font-size:13px;color:#8E8B7E;">04</span>
+        <span class="mincho" style="font-size:28px;font-weight:600;color:#18170F;letter-spacing:-0.01em;">リサーチ・分析</span>
+      </a>
+      <a href="guide.html" style="text-decoration:none;display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:24px;padding:26px 8px;border-bottom:1px solid #D6D1C4;">
+        <span class="mono" style="font-size:13px;color:#8E8B7E;">05</span>
+        <span class="mincho" style="font-size:28px;font-weight:600;color:#18170F;letter-spacing:-0.01em;">営業ドラフト作成</span>
+      </a>
+      <a href="guide.html" style="text-decoration:none;display:grid;grid-template-columns:64px 1fr;align-items:baseline;gap:24px;padding:26px 8px;border-bottom:1px solid #18170F;">
+        <span class="mono" style="font-size:13px;color:#8E8B7E;">06</span>
+        <span class="mincho" style="font-size:28px;font-weight:600;color:#18170F;letter-spacing:-0.01em;">定型業務の自動化</span>
+      </a>
     </div>
-    <div class="matrix-toggle">
-      <button data-kind="am" class="active">構成 × 記憶（メモリ）</button>
-      <button data-kind="at">構成 × ツール</button>
+  </div>
+</section>
+
+<section id="build" style="background:#EFEBE0;border-bottom:1px solid #18170F;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:96px 48px;">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px;flex-wrap:wrap;margin:0 0 56px;">
+      <h2 class="mincho" style="margin:0;font-weight:600;font-size:44px;line-height:1.15;letter-spacing:-0.02em;color:#18170F;">選ぶ、組む、<span style="color:#1B3CCB;">見極める</span>。</h2>
+      <a href="guide.html" style="font-size:15px;font-weight:700;color:#18170F;text-decoration:none;border-bottom:2px solid #18170F;padding-bottom:3px;">裏側の仕組みを見る →</a>
     </div>
-    <div class="matrix-legend">
-      <span class="swatch cell-rec" title="まず検討してよい組み合わせ">◎ 推奨</span>
-      <span class="swatch cell-nat" title="多くの場合で使いやすい組み合わせ">○ 自然</span>
-      <span class="swatch cell-ok" title="条件次第で使える組み合わせ">· 可能</span>
-      <span class="swatch cell-warn" title="設計上の注意が必要な組み合わせ">! 要注意</span>
-      <span class="swatch cell-no" title="初心者は避けたほうがよい組み合わせ">✕ 非推奨</span>
+
+    <div class="steps-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid #18170F;">
+      <div style="padding:34px 28px 40px;border-right:1px solid #D6D1C4;">
+        <div class="mincho" style="font-size:40px;font-weight:600;color:#1B3CCB;line-height:1;">01</div>
+        <h3 style="margin:22px 0 0;font-size:19px;font-weight:700;color:#18170F;">やりたいことを選ぶ</h3>
+      </div>
+      <div style="padding:34px 28px 40px;border-right:1px solid #D6D1C4;">
+        <div class="mincho" style="font-size:40px;font-weight:600;color:#1B3CCB;line-height:1;">02</div>
+        <h3 style="margin:22px 0 0;font-size:19px;font-weight:700;color:#18170F;">構成を組み立てる</h3>
+      </div>
+      <div style="padding:34px 28px 40px;border-right:1px solid #D6D1C4;">
+        <div class="mincho" style="font-size:40px;font-weight:600;color:#1B3CCB;line-height:1;">03</div>
+        <h3 style="margin:22px 0 0;font-size:19px;font-weight:700;color:#18170F;">記憶・スキルを接続</h3>
+      </div>
+      <div style="padding:34px 28px 40px;background:#F4F1E9;">
+        <div class="mincho" style="font-size:40px;font-weight:600;color:#1B3CCB;line-height:1;">04</div>
+        <h3 style="margin:22px 0 0;font-size:19px;font-weight:700;color:#18170F;">評価して公開</h3>
+      </div>
     </div>
-    <details class="disclose" style="margin:0 0 14px">
-      <summary>記号の意味（初心者向け）<span class="ds-hint">タップで開く</span></summary>
-      <div class="disclose__body">
-        <div class="legend">
-          <span class="legend__cap">記号の読み方</span>
-          <div class="legend__items">
-            <span class="legend__item"><b>◎ 推奨</b><span>まず検討してよい組み合わせ</span></span>
-            <span class="legend__item"><b>○ 自然</b><span>多くの場合で使いやすい組み合わせ</span></span>
-            <span class="legend__item"><b>· 可能</b><span>条件次第で使える組み合わせ</span></span>
-            <span class="legend__item"><b>! 要注意</b><span>設計上の注意が必要な組み合わせ</span></span>
-            <span class="legend__item"><b>✕ 非推奨</b><span>初心者は避けたほうがよい組み合わせ</span></span>
+  </div>
+</section>
+
+<section id="risk" style="background:#18170F;color:#F4F1E9;position:relative;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:104px 48px;">
+    <div class="risk-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;">
+      <div>
+        <span class="mono" style="font-size:12px;letter-spacing:0.2em;text-transform:uppercase;color:#8FA5FF;">独自機能</span>
+        <h2 class="mincho" style="margin:20px 0 0;font-weight:600;font-size:52px;line-height:1.12;letter-spacing:-0.02em;color:#F4F1E9;">動かす前に、<br>リスクを<span style="font-style:italic;color:#8FA5FF;">見極める。</span></h2>
+        <p style="margin:24px 0 0;max-width:420px;font-size:17px;line-height:1.85;color:#B7B3A6;">公開する前に、設計を自動で分析。エージェント特有の12観点でリスクを洗い出し、直すべき点まで示します。</p>
+        <div class="risk-grid-12" style="margin-top:36px;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(244,241,233,0.16);border-left:1px solid rgba(244,241,233,0.16);">
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">01</span><span style="font-size:14.5px;font-weight:500;">プロンプト注入</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">02</span><span style="font-size:14.5px;font-weight:500;">幻覚・誤情報</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">03</span><span style="font-size:14.5px;font-weight:500;">暴走・無限ループ</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">04</span><span style="font-size:14.5px;font-weight:500;">過剰な権限</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">05</span><span style="font-size:14.5px;font-weight:500;">データ漏えい・PII</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">06</span><span style="font-size:14.5px;font-weight:500;">ツールの誤用</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">07</span><span style="font-size:14.5px;font-weight:500;">コスト暴発</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">08</span><span style="font-size:14.5px;font-weight:500;">再現性のなさ</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">09</span><span style="font-size:14.5px;font-weight:500;">監督の欠如</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">10</span><span style="font-size:14.5px;font-weight:500;">バイアス・公平性</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">11</span><span style="font-size:14.5px;font-weight:500;">サブ連携の破綻</span></div>
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(244,241,233,0.16);border-right:1px solid rgba(244,241,233,0.16);display:flex;align-items:baseline;gap:10px;"><span class="mono" style="font-size:11px;color:#6E7CB0;">12</span><span style="font-size:14.5px;font-weight:500;">法令・コンプラ</span></div>
+        </div>
+        <a href="ai_security_assessment.html#dashboard" style="margin-top:28px;display:inline-flex;align-items:center;gap:10px;background:#1B3CCB;color:#F4F1E9;text-decoration:none;padding:14px 24px;font-weight:700;font-size:15px;">リスク評価を試す<span class="mono">→</span></a>
+      </div>
+
+      <div style="border:1px solid rgba(244,241,233,0.2);background:#F4F1E9;color:#18170F;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 26px;border-bottom:1px solid #18170F;background:#EFEBE0;gap:12px;flex-wrap:wrap;">
+          <span class="mono" style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#57544A;">評価レポート</span>
+          <span class="mono" style="font-size:12px;color:#8E8B7E;">問い合わせ対応エージェント</span>
+        </div>
+        <div style="padding:30px 26px;display:flex;align-items:center;gap:24px;border-bottom:1px solid #C9C4B6;">
+          <span class="mincho" style="font-size:84px;font-weight:800;line-height:0.85;color:#1B3CCB;">B</span>
+          <div>
+            <div style="font-size:17px;font-weight:700;">総合リスク：中程度</div>
+            <div style="font-size:14px;color:#8E8B7E;margin-top:5px;line-height:1.6;">公開可。ただし2件の確認を推奨します。</div>
+          </div>
+        </div>
+        <div style="padding:24px 26px;display:flex;flex-direction:column;gap:20px;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span style="width:30px;height:30px;border:1.5px solid #4D7C0F;color:#4D7C0F;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;">A</span>
+            <div style="flex:1;"><div style="font-size:15px;font-weight:700;">情報の取り扱い</div><div style="font-size:13px;color:#8E8B7E;">外部送信なし・PIIマスキング有効</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span style="width:30px;height:30px;border:1.5px solid #B45309;color:#B45309;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;">C</span>
+            <div style="flex:1;"><div style="font-size:15px;font-weight:700;">出力の信頼性</div><div style="font-size:13px;color:#8E8B7E;">根拠提示は有効。確信度の閾値設定を推奨</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span style="width:30px;height:30px;border:1.5px solid #B45309;color:#B45309;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;">C</span>
+            <div style="flex:1;"><div style="font-size:15px;font-weight:700;">権限と操作範囲</div><div style="font-size:13px;color:#8E8B7E;">起票スキルの権限が広め。範囲の絞り込みを推奨</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span style="width:30px;height:30px;border:1.5px solid #4D7C0F;color:#4D7C0F;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:none;">A</span>
+            <div style="flex:1;"><div style="font-size:15px;font-weight:700;">コスト・負荷</div><div style="font-size:13px;color:#8E8B7E;">想定トークン量・レート制限ともに健全</div></div>
           </div>
         </div>
       </div>
-    </details>
-    <div class="matrix-wrap" id="matrixWrap"></div>
-  </section>
-
-  <!-- === Builder View (設計を組み立てる) === -->
-  <section id="builderView" class="view">
-    <div class="guide-intro">
-      <h2>設計を組み立てる</h2>
-      <p>質問に答えるだけで、用途に合ったおすすめ設計が出てきます。用語は補足として後から表示します。</p>
-    </div>
-
-    <div class="mode-toggle" role="tablist" aria-label="組み立てモード">
-      <button id="modeBeginner" type="button" role="tab" class="active">初心者モード <span class="mt-sub">質問に答える</span></button>
-      <button id="modeDetail" type="button" role="tab">詳細モード <span class="mt-sub">A／M／Tを自分で選ぶ</span></button>
-    </div>
-
-    <!-- Beginner wizard -->
-    <div id="wizardWrap"></div>
-
-    <!-- Detail mode (existing A/M/T composer) -->
-    <div id="detailModeWrap" hidden>
-      <div class="builder-grid">
-        <div class="builder-slot">
-          <label>A：AIの動かし方（構成）</label>
-          <select id="bA"></select>
-          <div class="desc" id="bAdesc">未選択</div>
-        </div>
-        <div class="builder-slot">
-          <label>M：何を覚えさせるか（メモリ）</label>
-          <select id="bM"></select>
-          <div class="desc" id="bMdesc">未選択</div>
-        </div>
-        <div class="builder-slot">
-          <label>T：何を使わせるか（ツール）</label>
-          <select id="bT"></select>
-          <div class="desc" id="bTdesc">未選択</div>
-        </div>
-      </div>
-      <div class="compat-bar" id="compatBar"></div>
-      <div id="builderBody"></div>
-    </div>
-  </section>
-
-  <!-- === Detail View === -->
-  <section id="detailView" class="view"></section>
-
-</main>
-
-<div class="matrix-tip" id="matrixTip" role="dialog" aria-modal="true" aria-labelledby="tipTitle" aria-hidden="true">
-  <div class="matrix-tip-inner">
-    <div>
-      <h4 id="tipTitle">—</h4>
-      <p id="tipBody">—</p>
-    </div>
-    <div class="actions">
-      <button class="btn sm" type="button" onclick="closeTip()">閉じる</button>
-      <button class="btn sm blue" type="button" id="tipOpenBuilder">設計を組み立てる →</button>
     </div>
   </div>
-</div>
+</section>
 
-
-
-<script>
-// ============================================================
-// Data and state
-// ============================================================
-let DATASET, ITEMS, FAMILIES, RECOMMENDED, TAGS, AM, AT, MEMORY_COMMON;
-function __assignDataset(d){
-  DATASET = d;
-  ITEMS = DATASET.items;
-  FAMILIES = DATASET.families;
-  RECOMMENDED = DATASET.recommended;
-  TAGS = DATASET.tags;
-  AM = DATASET.amMatrix;
-  AT = DATASET.atMatrix;
-  MEMORY_COMMON = DATASET.memoryCommon || {};
-}
-
-const $ = (id)=>document.getElementById(id);
-function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
-function uniq(arr){return [...new Set(arr.filter(Boolean))].sort();}
-
-const STATE = {
-  mode:'usecases',          // intro|usecases|ucdetail|search|matrix|builder|detail
-  domain:'agent',
-  q:'', category:'', placement:'', memory:'', memoryFamily:'', role:'',
-  tag:'',
-  matrixKind:'am',
-  bA:'', bM:'', bT:'',
-  detailId:'',
-  ucId:'',                  // 用途詳細で表示中の recommended.id
-  builderMode:'beginner',   // beginner|detail
-  wizStep:0,                // 0..4 = 質問, 5 = 結果
-  wiz:{ goal:'', autonomy:'', memory:'', tool:'' },
-};
-
-// ============================================================
-// Beginner layer metadata — 初心者向けの言い換え・難易度・派生情報
-// (既存データを壊さず、表示時に補足として合成する)
-// ============================================================
-// AIの動かし方 / 記憶 / ツール を初心者向けに言い換える短文
-const PLAIN = {
-  agent:{
-    'simple-chain':'決まった手順を、上から順番に実行する構成',
-    'pipeline':'工程を流れ作業のようにつないで処理する構成',
-    'dag-workflow':'依存関係に沿って並行・分岐しながら進める構成',
-    'map-reduce':'大量の作業を分割して処理し、最後にまとめる構成',
-    'iterative-loop':'試して直してを繰り返し、品質を上げる構成',
-    'human-in-loop':'重要な判断の前に、人の確認・承認をはさむ構成',
-    'router-supervisor':'内容を見て、適切な担当へ振り分ける構成',
-    'manager-worker':'管理役が作業を分け、担当役にやらせる構成',
-    'planner-executor':'まず計画を立て、その通りに実行する構成',
-    'agents-as-tools':'専門AIを「道具」として呼び出して使う構成',
-    'hierarchical-supervisor':'複数の管理役を階層でまとめる大規模構成',
-    'critic-supervisor':'生成役と批評役を分け、品質を担保する構成',
-    'memory-manager':'記憶の管理役を置いて文脈を整理する構成',
-    'handoff-swarm':'担当を引き継ぎながら協力して進める構成',
-    'group-chat':'複数AIが会話しながら結論を出す構成',
-    'blackboard':'共有の作業板に書き込みながら協調する構成',
-    'debate-committee':'賛否を議論させて意思決定する構成',
-    'market-bidding':'各AIが入札してタスクを動的に分担する構成',
-    'role-playing-crew':'役割を演じる複数AIで企画・検討する構成',
-    'event-driven-swarm':'イベント発生に応じて自動で動き出す構成',
-  },
-  memory:{
-    'memory-stateless':'何も覚えない（毎回まっさら）',
-    'memory-session':'その会話の間だけ覚える',
-    'memory-workflow-state':'作業中の進行状態を覚える',
-    'memory-shared':'複数AIで同じ情報を共有して覚える',
-    'memory-per-agent':'担当・利用者ごとに分けて覚える',
-    'memory-rag':'社内文書などを検索して参照する',
-    'memory-episodic':'過去のやりとりを長期に覚えておく',
-    'memory-procedural':'手順・やり方を覚えて再利用する',
-    'memory-cache':'計算結果を一時的に覚えて高速化する',
-    'memory-audit-event':'いつ何をしたかを記録して残す',
-  },
-  tool:{
-    'function-calling':'決めた関数・ツールをAIに呼び出させる',
-    'rest-api':'外部サービスのAPIとやりとりする',
-    'mcp':'Slack/Teamsなどに標準手順でつなぐ',
-    'a2a':'AI同士が直接通信して連携する',
-    'webhook':'外部の出来事を受け取って動く',
-    'event-queue':'イベントをキューで受け渡しする',
-    'rag-retrieval':'文書を検索して根拠を取り出す',
-    'database-sql':'データベースに問い合わせる',
-    'sandbox-executor':'安全な環境でコードを実行する',
-    'browser-automation':'ブラウザを操作して作業する',
-  }
-};
-
-// 難易度（基準）
-const DIFF_BASE = {
-  'simple-chain':1,'pipeline':1,'map-reduce':2,'dag-workflow':2,'iterative-loop':2,
-  'router-supervisor':2,'agents-as-tools':2,'planner-executor':2,
-  'human-in-loop':2,'manager-worker':3,'hierarchical-supervisor':3,'critic-supervisor':3,
-  'memory-manager':3,'handoff-swarm':3,'group-chat':3,'blackboard':3,'debate-committee':3,
-  'market-bidding':3,'role-playing-crew':3,'event-driven-swarm':3,
-};
-function difficultyOf(rec){
-  let d = DIFF_BASE[rec.A] || 2;
-  const t = rec.tags||[];
-  if(t.includes('高リスク')||t.includes('承認')||t.includes('監査')) d = Math.max(d,3);
-  if(t.includes('大規模処理')) d = Math.max(d,3);
-  return d>=3?{key:'high',label:'高'}:d===2?{key:'mid',label:'中'}:{key:'low',label:'低'};
-}
-const DIFF_HINT = {low:'初心者が最初に試しやすい',mid:'データや連携の準備が必要',high:'権限・承認・複数連携が必要'};
-
-// 「必要なもの」をツール・メモリから派生
-const NEED_TOOL = {
-  'function-calling':'ツール定義','rest-api':'外部API','mcp':'Slack / Teams 等','a2a':'AI間通信',
-  'webhook':'Webhook受信','event-queue':'イベントキュー','rag-retrieval':'文書検索',
-  'database-sql':'データベース','sandbox-executor':'実行環境','browser-automation':'ブラウザ操作環境',
-};
-const NEED_MEM = {
-  'memory-rag':'社内文書','memory-session':'会話履歴','memory-audit-event':'操作ログ',
-  'memory-episodic':'長期記憶ストア','memory-per-agent':'利用者別の記憶','memory-shared':'共有メモリ',
-};
-function needsOf(rec){
-  const set = new Set(['AIモデル']);
-  if(NEED_TOOL[rec.T]) set.add(NEED_TOOL[rec.T]);
-  if(NEED_MEM[rec.M]) set.add(NEED_MEM[rec.M]);
-  if(rec.A==='human-in-loop') set.add('承認する人');
-  if((rec.tags||[]).includes('監査')) set.add('監査ログ');
-  return [...set];
-}
-// 最小構成（MVP）
-function minimalOf(rec){
-  const steps = ['入力フォーム'];
-  if(rec.T==='rag-retrieval' || rec.M==='memory-rag') steps.push('文書検索');
-  if(rec.T==='database-sql') steps.push('データベース接続');
-  if(rec.T==='rest-api') steps.push('API呼び出し（1つ）');
-  steps.push('主処理（生成・分類など）');
-  if(rec.A==='human-in-loop' || (rec.tags||[]).includes('承認')) steps.push('人の確認・承認');
-  steps.push('結果の表示');
-  steps.push('ログ保存');
-  return steps;
-}
-// 次にやること
-function nextOf(rec){
-  const out = ['使うデータ・文書の範囲を決める'];
-  if(rec.A==='human-in-loop'||(rec.tags||[]).includes('承認')||(rec.tags||[]).includes('高リスク'))
-    out.push('人が確認・承認する条件を決める');
-  else out.push('どこまでAIに任せるかを決める');
-  if(rec.M==='memory-rag'||rec.T==='rag-retrieval') out.push('参照してよい文書とNGの文書を分ける');
-  out.push('小さな業務から試して、結果を確認する');
-  return out;
-}
-const MEM_JARGON = {
-  'memory-stateless':'ステートレス','memory-session':'セッションメモリ','memory-workflow-state':'ワークフロー状態',
-  'memory-shared':'共有メモリ / Blackboard','memory-per-agent':'個別メモリ','memory-rag':'RAG / 外部知識',
-  'memory-episodic':'エピソード / 長期記憶','memory-procedural':'手続き / スキルメモリ',
-  'memory-cache':'キャッシュ / 作業記憶','memory-audit-event':'監査ログ / イベント状態',
-};
-
-// ============================================================
-// Lookup helpers
-// ============================================================
-function getItem(id){return ITEMS.find(x=>x.id===id);}
-function getAgents(){return ITEMS.filter(x=>x.domain==='agent');}
-function getMemories(){return ITEMS.filter(x=>x.domain==='memory');}
-function getTools(){return ITEMS.filter(x=>x.domain==='tool');}
-function domainName(d){return d==='agent'?'エージェント構成':d==='tool'?'ツールユース':'メモリ設計';}
-function amCell(aid,mid){return AM[`${aid}|${mid}`]||{level:'ok',note:''};}
-function atCell(aid,tid){return AT[`${aid}|${tid}`]||{level:'ok',note:''};}
-function levelName(l){return {rec:'推奨',nat:'自然',ok:'可能',warn:'要注意',no:'非推奨'}[l]||'—';}
-function levelPillClass(l){return {rec:'green',nat:'green',ok:'gray',warn:'amber',no:'red'}[l]||'gray';}
-
-// ============================================================
-// Mermaid lazy loader
-// ============================================================
-function loadMermaid(){return new Promise((resolve)=>{if(window.mermaid){resolve(true);return;}const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';s.onload=()=>{try{window.mermaid.initialize({startOnLoad:false,securityLevel:'loose',theme:'default'});resolve(true);}catch(e){resolve(false);}};s.onerror=()=>resolve(false);document.head.appendChild(s);});}
-async function renderMermaidBlocks(){const ok=await loadMermaid();if(!ok||!window.mermaid)return;try{document.querySelectorAll('.mermaid').forEach(el=>{el.removeAttribute('data-processed');});await window.mermaid.run({querySelector:'.mermaid'});}catch(e){console.warn('Mermaid render failed',e);}}
-function diagramHtml(code){return `<div class="mermaid-wrap"><div class="render"><div class="mermaid">${esc(code||'')}</div></div></div>`;}
-
-// ============================================================
-// Routing  (search filters now persisted in URL — #3)
-// ============================================================
-const SEARCH_KEYS = {q:'q', category:'cat', placement:'pl', memory:'mem', memoryFamily:'fam', role:'role'};
-function parseHash(){
-  const raw = location.hash.replace(/^#/,'');
-  if(!raw) return {mode:'usecases'};
-  const [path, query=''] = raw.split('?');
-  const parts = path.split('/');
-  const m = parts[0];
-  if(m==='intro') return {mode:'intro'};
-  if(m==='usecases'){
-    const tag = (parts[1]||'').replace(/^tag=/,'');
-    return {mode:'usecases', tag:decodeURIComponent(tag)};
-  }
-  if(m==='ucdetail') return {mode:'ucdetail', ucId:decodeURIComponent(parts[1]||'')};
-  if(m==='search'){
-    const qs = new URLSearchParams(query);
-    const out = {mode:'search', domain:parts[1]||'agent'};
-    for(const k in SEARCH_KEYS) out[k] = qs.get(SEARCH_KEYS[k]) || '';
-    return out;
-  }
-  if(m==='matrix') return {mode:'matrix', matrixKind:parts[1]||'am'};
-  if(m==='builder'){
-    if(!parts[1]) return {mode:'builder', builderMode:'beginner'};
-    const trio = (parts[1]||'').split('+');
-    return {mode:'builder', builderMode:'detail', bA:decodeURIComponent(trio[0]||''), bM:decodeURIComponent(trio[1]||''), bT:decodeURIComponent(trio[2]||'')};
-  }
-  if(m==='detail') return {mode:'detail', detailId:decodeURIComponent(parts[1]||'')};
-  return {mode:'usecases'};
-}
-
-// Build the hash string for the current search state
-function searchHash(){
-  const qs = new URLSearchParams();
-  for(const k in SEARCH_KEYS){ if(STATE[k]) qs.set(SEARCH_KEYS[k], STATE[k]); }
-  const q = qs.toString();
-  return 'search/'+STATE.domain+(q?('?'+q):'');
-}
-// Reflect live filter changes in the URL without polluting history / re-rendering
-function syncSearchURL(){
-  if(STATE.mode!=='search') return;
-  history.replaceState(null,'','#'+searchHash());
-}
-
-function applyHash(){
-  const p = parseHash();
-  // reset transient search fields when leaving search so stale filters don't linger
-  if(p.mode==='search'){ ['q','category','placement','memory','memoryFamily','role'].forEach(k=>{ if(!(k in p)) STATE[k]=''; }); }
-  Object.assign(STATE, p);
-  render();
-  restoreScroll();
-}
-
-function navigate(path){
-  scrollMap.set(location.hash, window.scrollY); // save outgoing position
-  location.hash = path;
-}
-
-// scroll restoration (#3)
-if('scrollRestoration' in history) history.scrollRestoration='manual';
-const scrollMap = new Map();
-let scrollTick=false;
-window.addEventListener('scroll',()=>{
-  if(scrollTick) return; scrollTick=true;
-  requestAnimationFrame(()=>{ scrollMap.set(location.hash, window.scrollY); scrollTick=false; });
-},{passive:true});
-function restoreScroll(){
-  const y = scrollMap.get(location.hash);
-  window.scrollTo(0, typeof y==='number' ? y : 0);
-}
-
-// copy current URL to clipboard (#3 share)
-async function shareCurrent(btn){
-  const url = location.href;
-  try{ await navigator.clipboard.writeText(url); }
-  catch(e){ const t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
-  if(btn){ const o=btn.textContent; btn.classList.add('copied'); btn.textContent='✓ コピーしました'; setTimeout(()=>{btn.classList.remove('copied');btn.textContent=o;},1600); }
-}
-
-// ============================================================
-// Top nav binding
-// ============================================================
-function renderTopNav(){
-  const navFor = {intro:'intro',usecases:'usecases',ucdetail:'usecases',search:'search',detail:'search',matrix:'matrix',builder:'builder'};
-  const target = navFor[STATE.mode] || STATE.mode;
-  document.querySelectorAll('#topnav button').forEach(b=>{
-    const on = b.dataset.mode===target;
-    b.classList.toggle('active', on);
-    if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
-  });
-}
-
-// ============================================================
-// View switching
-// ============================================================
-function showOnly(viewId){
-  ['introView','usecasesView','ucDetailView','searchView','matrixView','builderView','detailView'].forEach(id=>{
-    $(id).classList.toggle('active', id===viewId);
-  });
-}
-
-function render(){
-  renderTopNav();
-  if(STATE.mode==='intro'){ showOnly('introView'); }
-  else if(STATE.mode==='usecases'){ showOnly('usecasesView'); renderUsecases(); }
-  else if(STATE.mode==='ucdetail'){ showOnly('ucDetailView'); renderUcDetail(); }
-  else if(STATE.mode==='search'){ showOnly('searchView'); renderSearch(); }
-  else if(STATE.mode==='matrix'){ showOnly('matrixView'); renderMatrix(); }
-  else if(STATE.mode==='builder'){ showOnly('builderView'); renderBuilderView(); }
-  else if(STATE.mode==='detail'){ showOnly('detailView'); renderDetail(); }
-}
-
-// ============================================================
-// Usecases view
-// ============================================================
-// タグに応じたラインアイコン（意味のある絵で一覧の単調さを解消）
-const UC_ICONS = {
-  chat:'<path d="M21 11.5a8.4 8.4 0 0 1-12 7.6L3 21l1.9-5.5A8.4 8.4 0 1 1 21 11.5z"/>',
-  book:'<path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5z"/><path d="M5 20.5A2.5 2.5 0 0 1 7.5 18H19"/>',
-  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M18.4 5.6l-2 2M7.6 16.4l-2 2"/>',
-  search:'<circle cx="11" cy="11" r="6"/><path d="m20 20-4.2-4.2"/>',
-  code:'<path d="m9 8-4 4 4 4M15 8l4 4-4 4"/>',
-  branch:'<circle cx="6" cy="6" r="2.2"/><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="12" r="2.2"/><path d="M8.1 7.1 15.9 11M8.1 16.9 15.9 13"/>',
-  layers:'<path d="M12 3 21 8l-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
-  shield:'<path d="M12 3 5 6v5c0 4 3 7 7 8 4-1 7-4 7-8V6z"/>',
-  bulb:'<path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 1 3.8 10.6c-.6.6-.8 1.1-.8 2.4H9c0-1.3-.2-1.8-.8-2.4A6 6 0 0 1 12 3z"/>',
-  spark:'<path d="M12 2.5 14 9l6.5 2-6.5 2-2 6.5-2-6.5L3.5 11 10 9z"/>'
-};
-const UC_TAG_MAP = {
-  '顧客対応':'chat','対話':'chat','ナレッジ':'book','長期記憶':'book',
-  '自動化':'gear','定型業務':'gear','RPA':'gear','調査':'search','分析':'search',
-  'コード生成':'code','レビュー':'code','意思決定':'branch','協調':'branch',
-  '大規模処理':'layers','高リスク':'shield','障害対応':'shield','企画':'bulb'
-};
-function ucIcon(tag){ return UC_ICONS[UC_TAG_MAP[tag]] || UC_ICONS.spark; }
-
-function renderUsecases(){
-  // Tag row
-  const tagRow = $('tagRow');
-  const allTagBtn = `<button class="tag ${STATE.tag===''?'active':''}" data-tag="">すべて (${RECOMMENDED.length})</button>`;
-  const tagBtns = TAGS.map(t=>{
-    const n = RECOMMENDED.filter(r=>r.tags.includes(t)).length;
-    return `<button class="tag ${STATE.tag===t?'active':''}" data-tag="${esc(t)}">${esc(t)} (${n})</button>`;
-  }).join('');
-  tagRow.innerHTML = allTagBtn + tagBtns;
-  tagRow.querySelectorAll('button').forEach(b=>{
-    b.addEventListener('click',()=>{
-      const t = b.dataset.tag;
-      navigate(t ? `usecases/tag=${encodeURIComponent(t)}` : 'usecases');
-    });
-  });
-
-  // Cards
-  const items = STATE.tag ? RECOMMENDED.filter(r=>r.tags.includes(STATE.tag)) : RECOMMENDED;
-  const grid = $('ucGrid');
-  if(!items.length){
-    grid.innerHTML = `<div class="empty">該当する用途がありません。タグを変えてみてください。</div>`;
-    return;
-  }
-  grid.innerHTML = items.map((r,i)=>{
-    const a = getItem(r.A);
-    const diff = difficultyOf(r);
-    const needs = needsOf(r).slice(0,4);
-    const cat = (r.tags||[])[0]||'';
-    return `<article class="uc-card" tabindex="0" role="button" aria-label="${esc(r.usecase)} の作り方を見る" style="animation-delay:${Math.min(i*35,360)}ms" data-uc="${esc(r.id)}">
-      <div class="uc-top">
-        <span class="uc-id"><span class="uc-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${ucIcon(cat)}</svg></span><span class="uc-cat">${esc(cat)}</span></span>
-        <span class="diff diff--${diff.key}">難しさ：${diff.label}</span>
-      </div>
-      <h4>${esc(r.usecase)}AI</h4>
-      <p class="uc-desc">${esc(r.summary)}</p>
-      <div class="uc-needs">
-        <span class="needs-cap">必要なもの</span>
-        <div class="chips">${needs.map(n=>`<span class="chip">${esc(n)}</span>`).join('')}</div>
-      </div>
-      <div class="uc-foot">
-        <span class="diff diff--${diff.key}" title="${esc(DIFF_HINT[diff.key])}">${esc(DIFF_HINT[diff.key])}</span>
-        <button class="uc-go" type="button" tabindex="-1">作り方を見る <span class="arrow" aria-hidden="true">→</span></button>
-      </div>
-    </article>`;
-  }).join('');
-  grid.querySelectorAll('[data-uc]').forEach(el=>{
-    const go=()=>navigate(`ucdetail/${encodeURIComponent(el.dataset.uc)}`);
-    el.addEventListener('click',go);
-    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();go();} });
-  });
-}
-
-// ============================================================
-// Usecase Detail view (用途別おすすめ構成) — 初心者向け
-// ============================================================
-function flowStepsHtml(a){
-  const steps = (a && a.steps) || [];
-  if(!steps.length) return '';
-  return steps.map((s,i)=>{
-    const arrow = i<steps.length-1 ? '<span class="flow-arrow" aria-hidden="true">→</span>' : '';
-    return `<div class="flow-step"><div class="fs-num">${i+1}</div><div class="fs-title">${esc(s.title)}</div><div class="fs-desc">${esc(s.short||'')}</div></div>${arrow}`;
-  }).join('');
-}
-function recCfgHtml(kind, item, jargon){
-  const cls = kind==='A'?'is-a':kind==='M'?'is-m':'is-t';
-  const tag = kind==='A'?'AIの動かし方':kind==='M'?'何を覚えさせるか':'何を使わせるか';
-  const plain = kind==='A'?(PLAIN.agent[item.id]||item.summary)
-              : kind==='M'?(PLAIN.memory[item.id]||item.summary)
-              : (PLAIN.tool[item.id]||item.summary);
-  return `<div class="rec-cfg ${cls}">
-    <span class="rc-tag">${esc(tag)}</span>
-    <div class="rc-plain">${esc(plain)}</div>
-    <div class="rc-body">${esc(item.summary)}</div>
-    <div class="rc-jargon"><b>専門用語：</b>${esc(jargon)}</div>
-    <a class="pill blue click rc-link" href="#detail/${esc(item.id)}">詳しく見る →</a>
-  </div>`;
-}
-function cautionHtml(list){
-  if(!list||!list.length) return '<p style="color:var(--muted);font-size:13px;margin:0">特記事項はありません。</p>';
-  return `<div class="caution-grid">${list.map(r=>`
-    <article class="caution-card">
-      <div class="cc-risk"><span class="cc-ico" aria-hidden="true">!</span><div><span class="cc-label">気をつけること</span><p class="cc-text">${esc(r.risk)}</p></div></div>
-      <div class="cc-ctl"><span class="cc-ico" aria-hidden="true">✓</span><div><span class="cc-label">対策</span><p class="cc-text">${esc(r.control)}</p></div></div>
-    </article>`).join('')}</div>`;
-}
-function renderUcDetail(){
-  const r = RECOMMENDED.find(x=>x.id===STATE.ucId);
-  const view = $('ucDetailView');
-  if(!r){ view.innerHTML = `<div class="empty">用途が見つかりません。<a href="#usecases">作りたいAIを選ぶ</a>に戻ってください。</div>`; return; }
-  const a = getItem(r.A), m = getItem(r.M), t = getItem(r.T);
-  const diff = difficultyOf(r);
-  const needs = needsOf(r);
-  const mvp = minimalOf(r);
-  const next = nextOf(r);
-  const trio = `${r.A}+${r.M}+${r.T}`;
-  const cautions = (r.risksControls && r.risksControls.length ? r.risksControls : (a?a.risksControls:[])) || [];
-
-  view.innerHTML = `<div class="ucd">
-    <div class="backrow">
-      <button class="btn" type="button" onclick="history.back()">← 一覧に戻る</button>
-      <span class="copy-note">作りたいAIを選ぶ ＞ ${esc(r.usecase)}AI</span>
+<section id="cta" style="background:#1B3CCB;color:#F4F1E9;border-bottom:1px solid #18170F;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:104px 48px;text-align:center;">
+    <h2 class="mincho" style="margin:0;font-weight:600;font-size:clamp(34px,5vw,56px);line-height:1.1;letter-spacing:-0.02em;color:#F4F1E9;">作りたいAIから、<br>はじめよう。</h2>
+    <div style="display:flex;align-items:center;justify-content:center;gap:26px;margin-top:44px;flex-wrap:wrap;">
+      <a href="guide.html" style="display:inline-flex;align-items:center;gap:10px;background:#F4F1E9;color:#18170F;text-decoration:none;padding:18px 32px;font-weight:700;font-size:16px;">無料ではじめる<span class="mono">→</span></a>
+      <a href="#product" style="font-size:16px;font-weight:700;color:#F4F1E9;text-decoration:none;border-bottom:2px solid #F4F1E9;padding-bottom:3px;">製品デモを見る</a>
     </div>
-
-    <div class="ucd-head">
-      <div class="ucd-badges">
-        <span class="diff diff--${diff.key}">難しさ：${diff.label}（${esc(DIFF_HINT[diff.key])}）</span>
-        ${(r.tags||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join('')}
-      </div>
-      <h2>${esc(r.usecase)}AI</h2>
-      <p class="ucd-lead">${esc(r.summary)}</p>
-    </div>
-
-    <section class="ucd-section">
-      <h3>① このAIでやること</h3>
-      <p style="font-size:15px;color:var(--ink);line-height:1.8;margin:0">${esc(r.summary)}</p>
-      <div style="margin-top:14px"><span class="needs-cap" style="display:block;margin-bottom:7px;font-family:var(--font-mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">必要なもの</span>
-        <div class="chips" style="display:flex;gap:6px;flex-wrap:wrap">${needs.map(n=>`<span class="chip" style="font-size:12px;font-weight:600;color:var(--ink-2);background:var(--paper-2);border:1px solid var(--line);border-radius:8px;padding:4px 11px">${esc(n)}</span>`).join('')}</div>
-      </div>
-    </section>
-
-    <section class="ucd-section">
-      <h3>② 処理の流れ</h3>
-      <div class="flow">${flowStepsHtml(a)}</div>
-    </section>
-
-    <section class="ucd-section">
-      <h3>③ おすすめ構成</h3>
-      <p class="sec-sub">専門用語は各カードの下に補足しています。</p>
-      <div class="rec-trio">
-        ${a?recCfgHtml('A',a,a.category):''}
-        ${m?recCfgHtml('M',m,MEM_JARGON[m.id]||m.category):''}
-        ${t?recCfgHtml('T',t,t.name):''}
-      </div>
-    </section>
-
-    <section class="ucd-section mvp">
-      <h3>④ 最小構成（まずはここから）</h3>
-      <span class="mvp-banner">✓ 最初はこれだけでOK</span>
-      <ol>${mvp.map(s=>`<li><span>${esc(s)}</span></li>`).join('')}</ol>
-      <p class="mvp-foot">小さく作って動かし、必要になってから機能を足すのが安全です。</p>
-    </section>
-
-    <section class="ucd-section">
-      <h3>⑤ 作る前に気をつけること</h3>
-      <p class="sec-sub">よくある落とし穴と対策をセットで。</p>
-      ${cautionHtml(cautions)}
-    </section>
-
-    <section class="ucd-section">
-      <h3>⑥ 次にやること</h3>
-      <p class="sec-sub">この設計で進めるなら、まず決めておきたいこと。</p>
-      <div class="next-list">${next.map(n=>`<div class="next-item"><span class="ni-check" aria-hidden="true"></span><span>${esc(n)}</span></div>`).join('')}</div>
-    </section>
-
-    <section class="ucd-section">
-      <h3>⑦ さらに進む</h3>
-      <p class="sec-sub">この内容を初期値にして、組み立てや詳細確認ができます。</p>
-      <div class="ucd-cta">
-        <a class="btn-hero primary" href="#builder/${esc(trio)}">この内容で設計を組み立てる <span class="arrow" aria-hidden="true">→</span></a>
-        <a class="btn-hero ghost" href="#matrix/am">詳細比較で相性を見る</a>
-      </div>
-      <details class="disclose">
-        <summary>専門的な詳細を開く（A／M／T・図解・相性）<span class="ds-hint">必要な人だけ</span></summary>
-        <div class="disclose__body">
-          <div class="linkrow" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px">
-            ${a?`<a class="pill blue click" href="#detail/${esc(a.id)}">${esc(a.name)}（構成）→</a>`:''}
-            ${m?`<a class="pill amber click" href="#detail/${esc(m.id)}">${esc(m.name)}（メモリ）→</a>`:''}
-            ${t?`<a class="pill blue click" href="#detail/${esc(t.id)}">${esc(t.name)}（ツール）→</a>`:''}
-          </div>
-        </div>
-      </details>
-    </section>
-  </div>`;
-}
-
-// 現在のドメインに属するアイテム一覧
-function currentItems(){ return ITEMS.filter(x=>x.domain===STATE.domain); }
-
-function filtered(){
-  const q = STATE.q.trim().toLowerCase();
-  return currentItems().filter(x=>{
-    const blob = [x.name,x.category,x.placement,x.memory,x.role,x.summary,
-      ...(x.memoryBranches||[]),...(x.memoryFamilies||[]),...(x.keywords||[]),
-      ...(x.useCases||[]).flatMap(u=>[u.title,u.scene,u.input,u.success])
-    ].join(' ').toLowerCase();
-    return (!STATE.category||x.category===STATE.category)
-      && (!STATE.placement||x.placement===STATE.placement)
-      && (!STATE.memory||x.memory===STATE.memory)
-      && (!STATE.memoryFamily||(x.memoryFamilies||[]).includes(STATE.memoryFamily))
-      && (!STATE.role||x.role===STATE.role)
-      && (!q||blob.includes(q));
-  });
-}
-function optionHtml(values, selected, all='すべて'){
-  return `<option value="">${all}</option>`+values.map(v=>`<option value="${esc(v)}" ${v===selected?'selected':''}>${esc(v)}</option>`).join('');
-}
-function renderFilters(){
-  const items = currentItems();
-  $('category').innerHTML = optionHtml(uniq(items.map(x=>x.category)),STATE.category);
-  $('placement').innerHTML = optionHtml(uniq(items.map(x=>x.placement)),STATE.placement,STATE.domain==='tool'?'通信様式すべて':STATE.domain==='memory'?'保存場所すべて':'配置すべて');
-  $('memory').innerHTML = optionHtml(uniq(items.map(x=>x.memory)),STATE.memory);
-  $('memoryFamily').innerHTML = optionHtml(uniq(items.flatMap(x=>x.memoryFamilies||[])),STATE.memoryFamily);
-  $('role').innerHTML = optionHtml(uniq(items.map(x=>x.role)),STATE.role);
-  $('q').value = STATE.q;
-  $('placementLabel').textContent = STATE.domain==='tool'?'通信様式':STATE.domain==='memory'?'保存場所':'配置';
-  document.querySelectorAll('.tab').forEach(b=>{
-    const on=b.dataset.domain===STATE.domain;
-    b.classList.toggle('active',on);
-    b.setAttribute('aria-selected', on?'true':'false');
-  });
-}
-function renderSearch(){
-  renderFilters();
-  const items = filtered();
-  const label = `${items.length}件`;
-  $('count').textContent = label;
-  const ci = $('countInline'); if(ci) ci.textContent = label;
-  $('domainLabel').textContent = domainName(STATE.domain);
-  $('cards').innerHTML = items.length
-    ? items.map(x=>cardHtml(x)).join('')
-    : '<div class="empty">条件に合う項目がありません。フィルターをゆるめてください。</div>';
-  document.querySelectorAll('[data-open]').forEach(el=>{
-    const go=()=>navigate('detail/'+encodeURIComponent(el.dataset.open));
-    el.addEventListener('click',go);
-    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();go();} });
-  });
-  syncSearchURL();
-}
-function cardHtml(x){
-  const mem = (x.memoryFamilies||[]).slice(0,2).map(v=>`<span class="pill red">${esc(v)}</span>`).join('');
-  return `<article class="card" tabindex="0" role="button" aria-label="${esc(x.name)} の詳細を開く" data-open="${esc(x.id)}">
-    <span class="pill blue">${esc(x.category)}</span>
-    <h3>${esc(x.name)}</h3>
-    <p>${esc(x.summary)}</p>
-    <div class="card-footer">
-      <span class="pill">${esc(x.placement)}</span>
-      <span class="pill">${esc(x.memory)}</span>
-      <span class="pill green">${esc(x.role)}</span>
-      ${mem}
-    </div>
-  </article>`;
-}
-
-// ============================================================
-// Detail view (preserved & enhanced with cross-links)
-// ============================================================
-function renderDetail(){
-  const x = getItem(STATE.detailId);
-  if(!x){ $('detailView').innerHTML = `<div class="empty">項目が見つかりません</div>`; return; }
-  STATE.domain = x.domain;
-  const crossLinks = buildCrossLinks(x);
-  $('detailView').innerHTML = `
-    <div class="detail">
-      <div class="backrow">
-        <button class="btn" onclick="history.back()">← 戻る</button>
-        <button class="btn blue" onclick="openBuilderFromDetail('${esc(x.id)}')">この${esc(domainName(x.domain).slice(0,1))}で設計を組み立てる →</button>
-        <span class="copy-note" id="copyNote"></span>
-      </div>
-      <div class="detail-head">
-        <div>
-          <span class="pill blue">${esc(domainName(x.domain))}</span>
-          <span class="pill">${esc(x.category)}</span>
-          <h2>${esc(x.name)}</h2>
-          <p class="lead">${esc(x.summary)}</p>
-        </div>
-      </div>
-      <div class="grid3">
-        <div class="metric"><b>${x.domain==='tool'?'通信様式':x.domain==='memory'?'保存場所':'配置'}</b><span>${esc(x.placement)}</span></div>
-        <div class="metric"><b>メモリ / 状態</b><span>${esc(x.memory)}</span></div>
-        <div class="metric"><b>役割</b><span>${esc(x.role)}</span></div>
-      </div>
-      ${crossLinks}
-      ${x.expectedTools?`<section class="section"><h3>想定されるツール</h3><p>${esc(x.expectedTools)}</p></section>`:''}
-      <section class="section"><h3>メモリの使い方</h3>${memoryUseHtml(x)}</section>
-      <section class="section"><h3>各ステップ</h3>${stepsHtml(x.steps)}</section>
-      <section class="section diagrams">
-        <h3>図解</h3>
-        ${legendHtml(x.legend)}
-        ${x.dataFlowMermaid?`<h4 class="diagram-title">データフロー図</h4>${diagramHtml(x.dataFlowMermaid)}`:''}
-        ${x.architectureMermaid?`<h4 class="diagram-title">構成図</h4>${diagramHtml(x.architectureMermaid)}`:''}
-        ${x.memoryFlowMermaid?`<h4 class="diagram-title">メモリ使用図</h4>${diagramHtml(x.memoryFlowMermaid)}`:''}
-      </section>
-      <details class="disclose"><summary>ユースケース例<span class="ds-hint">タップで開く</span></summary><div class="disclose__body">${useCasesHtml(x.useCases)}</div></details>
-      <details class="disclose"><summary>リスクと対策<span class="ds-hint">タップで開く</span></summary><div class="disclose__body">${risksHtml(x.risksControls)}</div></details>
-    </div>`;
-  renderMermaidBlocks();
-}
-
-function buildCrossLinks(x){
-  // For agent: show recommended M/T pairings; For memory/tool: show usedByAgents
-  if(x.domain==='agent'){
-    // pairings from RECOMMENDED and matrices
-    const recs = RECOMMENDED.filter(r=>r.A===x.id);
-    const goodM = getMemories().map(m=>({m,c:amCell(x.id,m.id)})).filter(o=>o.c.level==='rec'||o.c.level==='nat').sort((a,b)=>(a.c.level==='rec'?-1:1));
-    const goodT = getTools().map(t=>({t,c:atCell(x.id,t.id)})).filter(o=>o.c.level==='rec'||o.c.level==='nat').sort((a,b)=>(a.c.level==='rec'?-1:1));
-    if(!recs.length && !goodM.length && !goodT.length) return '';
-    return `<section class="section crosslink">
-      <h4>この構成と相性の良いメモリ・ツール</h4>
-      ${goodM.length?`<p><b>メモリ:</b> ${goodM.map(o=>`<a class="pill ${levelPillClass(o.c.level)} click" href="#detail/${esc(o.m.id)}">${esc(o.m.name)} <small>(${levelName(o.c.level)})</small></a>`).join(' ')}</p>`:''}
-      ${goodT.length?`<p><b>ツール:</b> ${goodT.map(o=>`<a class="pill ${levelPillClass(o.c.level)} click" href="#detail/${esc(o.t.id)}">${esc(o.t.name)} <small>(${levelName(o.c.level)})</small></a>`).join(' ')}</p>`:''}
-      ${recs.length?`<p><b>推奨ユースケース:</b><div class="linkrow">${recs.map(r=>`<a class="pill blue click" href="#builder/${esc(r.A)}+${esc(r.M)}+${esc(r.T)}">${esc(r.usecase)}</a>`).join('')}</div></p>`:''}
-    </section>`;
-  }
-  // memory or tool
-  const used = x.usedByAgents||[];
-  if(!used.length) return '';
-  const agents = used.map(aid=>getItem(aid)).filter(Boolean);
-  const label = x.domain==='memory'?'このメモリを使う構成':'このツールを使う構成';
-  return `<section class="section crosslink">
-    <h4>${label}</h4>
-    <div class="linkrow">${agents.map(a=>`<a class="pill blue click" href="#detail/${esc(a.id)}">${esc(a.name)}</a>`).join('')}</div>
-  </section>`;
-}
-
-function openBuilderFromDetail(id){
-  const x = getItem(id);
-  if(!x) return;
-  if(x.domain==='agent') navigate(`builder/${id}+memory-workflow-state+rest-api`);
-  else if(x.domain==='memory') navigate(`builder/simple-chain+${id}+rest-api`);
-  else navigate(`builder/simple-chain+memory-workflow-state+${id}`);
-}
-
-function memoryUseHtml(x){
-  const m = x.memoryUse||{};
-  return `<div class="itembox"><h4>メモリ大分類</h4>
-    <p>${(x.memoryFamilies||[]).map(esc).join('、')||'—'}</p>
-    <p><b>具体パターン:</b> ${(x.memoryBranches||[]).map(esc).join('、')||'—'}</p></div>
-  <div class="two">
-    <div class="itembox"><h4>読み出し</h4><p>${esc(m.read||'—')}</p></div>
-    <div class="itembox"><h4>書き込み</h4><p>${esc(m.write||'—')}</p></div>
   </div>
-  ${memoryCommonHtml()}`;
-}
-// 全構成に共通するメモリ運用の原則。各項目で内容は変わらないため、共通ブロックとして一度だけ提示する。
-function memoryCommonHtml(){
-  const c = MEMORY_COMMON||{};
-  return `<div class="memory-general">
-    <p class="memory-general__note">以下は<b>すべての構成に共通するメモリ運用の原則</b>です。個々の構成に固有のリスクは下部の「リスクと対策」を参照してください。</p>
-    <div class="two">
-      <div class="itembox"><h4>保持期間</h4><p>${esc(c.retention||'—')}</p></div>
-      <div class="itembox"><h4>保持粒度・所有者</h4><p>${esc(c.granularity||'—')}</p><p>${esc(c.ownership||'—')}</p></div>
-    </div>
-    <div class="two">
-      <div class="itembox risk"><h4>運用上の留意点</h4><ul>${(c.risks||[]).map(r=>`<li>${esc(r)}</li>`).join('')}</ul></div>
-      <div class="itembox control"><h4>標準的な対策</h4><ul>${(c.controls||[]).map(v=>`<li>${esc(v)}</li>`).join('')}</ul></div>
-    </div>
-  </div>`;
-}
-function stepsHtml(steps){
-  return (steps||[]).map((s,i)=>`<div class="itembox"><h4>Step ${i+1}. ${esc(s.title)} — ${esc(s.short||'')}</h4><p>${esc(s.description)}</p></div>`).join('');
-}
-function useCasesHtml(items){
-  return (items||[]).map(u=>`<div class="itembox"><h4>${esc(u.title)}</h4><p><b>想定シナリオ:</b> ${esc(u.scene)}</p><p><b>入力例:</b> ${esc(u.input)}</p><p><b>成功条件:</b> ${esc(u.success)}</p></div>`).join('');
-}
-function risksHtml(items){
-  if(!items || !items.length) return '<p style="color:var(--muted);font-size:13px;margin:0">登録されたリスク・対策はありません。</p>';
-  return `<p class="rc-section-head"><span class="pill red">この構成だけで起きるリスク</span><span style="color:#94a3b8;font-weight:700;font-size:11px">${items.length}件</span></p>
-    <p style="margin:0 0 8px;font-size:12px;color:var(--muted)">各カードは「リスク」と、それに対応する「対策」が1対1で並びます。</p>
-    <div class="rc-grid">${items.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>`;
-}
+</section>
 
-// 共通ヘルパー: リスクと対策を1枚の縦結合カードとして描画
-// label: バッジに出す識別子 (例: "1" / "A-1" / "M-2")。出所つきにすると複数グループでも一意に追える
-function rcPairHtml(r, label){
-  const id = esc(String(label));
-  return `<article class="rc-pair">
-    <div class="rc-pair__row rc-pair__row--risk">
-      <span class="rc-pair__kind">リスク${id}</span>
-      <p class="rc-pair__text">${esc(r.risk)}</p>
-    </div>
-    <div class="rc-pair__row rc-pair__row--ctl">
-      <span class="rc-pair__kind">対策${id}</span>
-      <p class="rc-pair__text">${esc(r.control)}</p>
-    </div>
-  </article>`;
-}
-function legendHtml(items){
-  if(!items || !items.length) return '';
-  return `<div class="legend">
-    <span class="legend__cap">図中の記号の意味</span>
-    <div class="legend__items">${items.map(l=>`<span class="legend__item"><b>${esc(l.symbol)}</b><span>${esc(l.meaning)}</span></span>`).join('')}</div>
-  </div>`;
-}
-
-// ============================================================
-// Matrix view
-// ============================================================
-function renderMatrix(){
-  // Toggle
-  document.querySelectorAll('.matrix-toggle button').forEach(b=>{
-    b.classList.toggle('active', b.dataset.kind===STATE.matrixKind);
-  });
-  const agents = getAgents();
-  const cols = STATE.matrixKind==='am' ? getMemories() : getTools();
-  const cellFn = STATE.matrixKind==='am' ? amCell : atCell;
-  let html = '<table class="matrix"><thead><tr><th class="row">構成 ＼ ' + (STATE.matrixKind==='am'?'メモリ':'ツール') + '</th>';
-  cols.forEach(c=>{
-    html += `<th class="col" title="${esc(c.name)}">${esc(c.name.length>14?c.name.slice(0,12)+'…':c.name)}</th>`;
-  });
-  html += '</tr></thead><tbody>';
-  agents.forEach(a=>{
-    html += `<tr><th class="row" title="${esc(a.name)}">${esc(a.name)}</th>`;
-    cols.forEach(c=>{
-      const cell = cellFn(a.id,c.id);
-      const sym = ({rec:'◎',nat:'○',ok:'·',warn:'!',no:'✕'})[cell.level];
-      html += `<td><button type="button" class="cell cell-${cell.level}" data-a="${esc(a.id)}" data-c="${esc(c.id)}" data-level="${cell.level}" aria-label="${esc(a.name)} × ${esc(c.name)}：${levelName(cell.level)}" title="${esc(cell.note||levelName(cell.level))}">${sym}</button></td>`;
-    });
-    html += '</tr>';
-  });
-  html += '</tbody></table>';
-  $('matrixWrap').innerHTML = html;
-  $('matrixWrap').querySelectorAll('button.cell').forEach(btn=>{
-    btn.addEventListener('click',()=>showTip(btn.dataset.a, btn.dataset.c, btn.dataset.level));
-  });
-}
-
-let tipReturnFocus=null;
-function showTip(aid, cid, level){
-  const a = getItem(aid);
-  const c = getItem(cid);
-  const cell = STATE.matrixKind==='am' ? amCell(aid,cid) : atCell(aid,cid);
-  $('tipTitle').textContent = `${a.name} × ${c.name} — ${levelName(level)}`;
-  $('tipBody').textContent = cell.note || `${levelName(level)}の組合せです。`;
-  let trio;
-  if(STATE.matrixKind==='am') trio = `${aid}+${cid}+rest-api`;
-  else trio = `${aid}+memory-workflow-state+${cid}`;
-  $('tipOpenBuilder').onclick = ()=>{ closeTip(); navigate(`builder/${trio}`); };
-  const tip = $('matrixTip');
-  tip.classList.add('show'); tip.setAttribute('aria-hidden','false');
-  tipReturnFocus = document.activeElement;
-  $('tipOpenBuilder').focus();
-}
-function closeTip(){
-  const tip = $('matrixTip');
-  tip.classList.remove('show'); tip.setAttribute('aria-hidden','true');
-  if(tipReturnFocus && tipReturnFocus.focus){ tipReturnFocus.focus(); tipReturnFocus=null; }
-}
-
-// ============================================================
-// Builder view — 初心者モード(ウィザード) / 詳細モード
-// ============================================================
-function renderBuilderView(){
-  const beginner = STATE.builderMode!=='detail';
-  $('modeBeginner').classList.toggle('active', beginner);
-  $('modeDetail').classList.toggle('active', !beginner);
-  $('modeBeginner').setAttribute('aria-selected', beginner?'true':'false');
-  $('modeDetail').setAttribute('aria-selected', beginner?'false':'true');
-  $('wizardWrap').hidden = !beginner;
-  $('detailModeWrap').hidden = beginner;
-  if(beginner){ renderWizard(); }
-  else { renderBuilder(); }
-}
-
-const WIZ = [
-  { key:'goal', kicker:'STEP 1 / 4', q:'何を作りたいですか？', note:'いちばん近いものを選んでください。',
-    opts:[
-      {v:'qa',   t:'社内問い合わせAI', d:'社内文書を調べて質問に答える'},
-      {v:'report',t:'レポート生成AI', d:'決まった形式の文書を自動で作る'},
-      {v:'mail', t:'メール分類AI',   d:'問い合わせを振り分け・仕分けする'},
-      {v:'research',t:'調査補助AI',  d:'複数の情報を集めて整理する'},
-      {v:'cs',   t:'カスタマーサポートAI', d:'顧客対応を支援する'},
-      {v:'other',t:'その他 / まだ決めていない', d:'まずは基本構成から'},
-    ]},
-  { key:'autonomy', kicker:'STEP 2 / 4', q:'どれくらい自動化したいですか？', note:'人がどこまで関わるかを決めます。',
-    opts:[
-      {v:'draft', t:'AIが下書きし、人が確認', d:'いちばん安全。まずはここから'},
-      {v:'approve',t:'AIが判断し、人が承認', d:'重要操作の前に承認をはさむ'},
-      {v:'auto', t:'AIが自動で処理', d:'定型業務向け。範囲を絞って'},
-      {v:'fallback',t:'失敗時だけ人に渡す', d:'通常は自動、例外時のみ人へ'},
-    ]},
-  { key:'memory', kicker:'STEP 3 / 4', q:'AIに何を覚えさせますか？', note:'覚える内容が多いほど準備も増えます。',
-    opts:[
-      {v:'none', t:'覚えさせない', d:'毎回まっさら。いちばん手軽'},
-      {v:'work', t:'作業中だけ覚える', d:'処理の途中経過を保持'},
-      {v:'user', t:'利用者ごとに履歴を覚える', d:'パーソナライズしたいとき'},
-      {v:'knowledge',t:'業務知識を検索できるようにする', d:'社内文書を参照させる'},
-    ]},
-  { key:'tool', kicker:'STEP 4 / 4', q:'AIに何を使わせますか？', note:'外部とつなぐ手段を選びます。',
-    opts:[
-      {v:'none', t:'連携なし', d:'AI単体で完結'},
-      {v:'doc',  t:'社内文書', d:'文書を検索して根拠にする'},
-      {v:'db',   t:'社内データベース', d:'DBに問い合わせる'},
-      {v:'chat', t:'Slack / Teams', d:'チャットツールにつなぐ'},
-      {v:'api',  t:'外部API', d:'外部サービスと連携'},
-      {v:'browser',t:'ブラウザ操作', d:'画面を操作して作業'},
-    ]},
-];
-
-const GOAL_BASE = {
-  qa:{A:'router-supervisor',M:'memory-rag',T:'rag-retrieval',name:'社内問い合わせ',tags:['顧客対応','ナレッジ']},
-  report:{A:'simple-chain',M:'memory-workflow-state',T:'rest-api',name:'レポート生成',tags:['定型業務','自動化']},
-  mail:{A:'pipeline',M:'memory-workflow-state',T:'event-queue',name:'メール分類',tags:['自動化','顧客対応']},
-  research:{A:'manager-worker',M:'memory-rag',T:'rag-retrieval',name:'調査補助',tags:['調査','大規模処理']},
-  cs:{A:'router-supervisor',M:'memory-per-agent',T:'rest-api',name:'カスタマーサポート',tags:['顧客対応','対話']},
-  other:{A:'simple-chain',M:'memory-workflow-state',T:'function-calling',name:'AIエージェント',tags:['自動化']},
-};
-const MEM_MAP = {none:'memory-stateless',work:'memory-workflow-state',user:'memory-per-agent',knowledge:'memory-rag'};
-const TOOL_MAP = {none:'function-calling',doc:'rag-retrieval',db:'database-sql',chat:'mcp',api:'rest-api',browser:'browser-automation'};
-
-function computeWizardResult(){
-  const w = STATE.wiz;
-  const base = GOAL_BASE[w.goal] || GOAL_BASE.other;
-  let A = base.A, M = base.M, T = base.T;
-  const tags = [...base.tags];
-  const reasons = [];
-  reasons.push(`「${base.name}」に近い用途なので、${PLAIN.agent[A]||A}を基本にしました。`);
-
-  if(w.autonomy==='approve'){ A='human-in-loop'; tags.push('承認'); reasons.push('重要な判断の前に人が承認する形にするため、人の確認をはさむ構成にしました。'); }
-  else if(w.autonomy==='draft'){ reasons.push('AIが下書きし人が確認する運用なので、まずはシンプルな構成で十分です。'); }
-  else if(w.autonomy==='fallback'){ tags.push('障害対応'); reasons.push('通常は自動、失敗時だけ人に渡すため、例外時のエスカレーション設計を前提にしています。'); }
-  else { reasons.push('自動で処理するため、対象範囲を絞り、ログで追えるようにしておくと安全です。'); tags.push('自動化'); }
-
-  if(w.memory && MEM_MAP[w.memory]){ M = MEM_MAP[w.memory]; reasons.push(`記憶は「${WIZ[2].opts.find(o=>o.v===w.memory).t}」を選んだので、${PLAIN.memory[M]||M}にしました。`); }
-  if(w.tool && TOOL_MAP[w.tool]){ T = TOOL_MAP[w.tool]; reasons.push(`連携は「${WIZ[3].opts.find(o=>o.v===w.tool).t}」なので、${PLAIN.tool[T]||T}を使います。`); }
-
-  // リスク: 同じAを持つ推奨例があれば借用、なければ構成自身のリスク
-  let risks = [];
-  const sameRec = RECOMMENDED.find(r=>r.A===A && (r.M===M||r.T===T)) || RECOMMENDED.find(r=>r.A===A);
-  if(sameRec && sameRec.risksControls) risks = sameRec.risksControls;
-  else { const a=getItem(A); risks = (a&&a.risksControls)||[]; }
-
-  const a=getItem(A);
-  const summary = `${base.name}向けに、${PLAIN.agent[A]||(a?a.name:A)}を中心とした設計です。`;
-  return { usecase:base.name, summary, A, M, T, tags:[...new Set(tags)], risksControls:risks, reasons };
-}
-
-function renderWizard(){
-  const wrap = $('wizardWrap');
-  const step = STATE.wizStep;
-  if(step>=WIZ.length){ wrap.innerHTML = wizardResultHtml(); bindWizardResult(); return; }
-
-  const cur = WIZ[step];
-  const sel = STATE.wiz[cur.key];
-  const progress = WIZ.map((_,i)=>`<span class="wp ${i<step?'done':i===step?'cur':''}"></span>`).join('');
-  wrap.innerHTML = `
-    <div class="wizard">
-      <div class="wiz-progress" aria-hidden="true">${progress}</div>
-      <div class="wiz-step">
-        <span class="wz-kicker">${esc(cur.kicker)}</span>
-        <h3>${esc(cur.q)}</h3>
-        <p class="wz-note">${esc(cur.note)}</p>
-        <div class="wiz-opts" role="group" aria-label="${esc(cur.q)}">
-          ${cur.opts.map(o=>`<button class="wiz-opt ${sel===o.v?'sel':''}" type="button" data-key="${esc(cur.key)}" data-val="${esc(o.v)}">
-            <span class="wo-title">${esc(o.t)}</span><span class="wo-desc">${esc(o.d)}</span></button>`).join('')}
+<footer style="background:#18170F;color:#F4F1E9;">
+  <div class="wrap" style="max-width:1240px;margin:0 auto;padding:56px 48px 40px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:40px;flex-wrap:wrap;padding-bottom:40px;border-bottom:1px solid rgba(244,241,233,0.16);">
+      <div style="max-width:300px;">
+        <span class="mincho" style="font-weight:800;font-size:26px;letter-spacing:0.04em;">GUILD</span>
+        <p style="margin:16px 0 0;font-size:14px;line-height:1.8;color:#A8A496;">つくって、動かして、リスクまで見極める。AIエージェント開発プラットフォーム。</p>
+      </div>
+      <div style="display:flex;gap:64px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <span class="mono" style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6E6B5E;">Product</span>
+          <a href="#usecases" style="font-size:14px;color:#D6D2C6;text-decoration:none;">作れるAI</a>
+          <a href="guide.html" style="font-size:14px;color:#D6D2C6;text-decoration:none;">仕組み</a>
+          <a href="#risk" style="font-size:14px;color:#D6D2C6;text-decoration:none;">リスク評価</a>
         </div>
-        <div class="wiz-nav">
-          <button class="btn" type="button" id="wizPrev" ${step===0?'disabled':''}>← 戻る</button>
-          <span style="font-size:12px;color:var(--muted);align-self:center">選ぶと自動で次へ進みます</span>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <span class="mono" style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6E6B5E;">Company</span>
+          <a href="https://github.com/ddashpot/info-aiagent" style="font-size:14px;color:#D6D2C6;text-decoration:none;">GitHub</a>
+          <a href="security.html" style="font-size:14px;color:#D6D2C6;text-decoration:none;">セキュリティ</a>
+          <a href="guide.html" style="font-size:14px;color:#D6D2C6;text-decoration:none;">ドキュメント</a>
         </div>
       </div>
-    </div>`;
-  wrap.querySelectorAll('.wiz-opt').forEach(b=>{
-    b.addEventListener('click',()=>{
-      STATE.wiz[b.dataset.key] = b.dataset.val;
-      STATE.wizStep = step+1;
-      renderWizard();
-      wrap.scrollIntoView({behavior:'smooth',block:'start'});
-    });
-  });
-  const prev = $('wizPrev');
-  if(prev) prev.addEventListener('click',()=>{ STATE.wizStep=Math.max(0,step-1); renderWizard(); });
-}
-
-function wizardResultHtml(){
-  const r = computeWizardResult();
-  STATE._wizResult = r;
-  const a=getItem(r.A), m=getItem(r.M), t=getItem(r.T);
-  const diff = difficultyOf(r);
-  const mvp = minimalOf(r);
-  const next = nextOf(r);
-  const trio = `${r.A}+${r.M}+${r.T}`;
-  return `<div class="wizard">
-    <div class="wiz-result-head">
-      <span class="pill green">診断完了</span>
-      <span class="diff diff--${diff.key}">難しさ：${diff.label}</span>
     </div>
-    <h3 style="font-family:var(--font-display);font-weight:600;font-size:clamp(20px,3.4vw,26px);margin:6px 0 4px;letter-spacing:-.015em">あなたの用途なら、この設計がおすすめです</h3>
-    <p style="color:var(--ink-2);font-size:14.5px;margin:0 0 18px;line-height:1.7">${esc(r.summary)}</p>
-
-    <div class="rec-trio" style="margin-bottom:16px">
-      ${a?recCfgHtml('A',a,a.category):''}
-      ${m?recCfgHtml('M',m,MEM_JARGON[m.id]||m.category):''}
-      ${t?recCfgHtml('T',t,t.name):''}
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;padding-top:24px;">
+      <span class="mono" style="font-size:12px;color:#6E6B5E;">© 2026 GUILD</span>
+      <span class="mono" style="font-size:12px;color:#6E6B5E;">Built for makers of AI agents</span>
     </div>
-
-    <section class="ucd-section" style="margin-bottom:14px">
-      <h3>なぜこの組み合わせか</h3>
-      <div class="next-list">${r.reasons.map(x=>`<div class="next-item"><span class="ni-check" style="border-color:var(--accent);background:var(--accent-bg)" aria-hidden="true"></span><span>${esc(x)}</span></div>`).join('')}</div>
-    </section>
-
-    <section class="ucd-section" style="margin-bottom:14px">
-      <h3>作る前に気をつけること</h3>
-      ${cautionHtml(r.risksControls)}
-    </section>
-
-    <section class="ucd-section mvp" style="margin-bottom:14px">
-      <h3>最初に作る最小構成</h3>
-      <span class="mvp-banner">✓ 最初はこれだけでOK</span>
-      <ol>${mvp.map(s=>`<li><span>${esc(s)}</span></li>`).join('')}</ol>
-    </section>
-
-    <section class="ucd-section" style="margin-bottom:16px">
-      <h3>次にやること</h3>
-      <div class="next-list">${next.map(n=>`<div class="next-item"><span class="ni-check" aria-hidden="true"></span><span>${esc(n)}</span></div>`).join('')}</div>
-    </section>
-
-    <div class="ucd-cta">
-      <a class="btn-hero primary" href="#builder/${esc(trio)}">この構成を詳細モードで開く <span class="arrow" aria-hidden="true">→</span></a>
-      <button class="btn-hero ghost" type="button" id="wizRestart">もう一度やり直す</button>
-    </div>
-  </div>`;
-}
-function bindWizardResult(){
-  const rs = $('wizRestart');
-  if(rs) rs.addEventListener('click',()=>{ STATE.wizStep=0; STATE.wiz={goal:'',autonomy:'',memory:'',tool:''}; renderWizard(); $('wizardWrap').scrollIntoView({behavior:'smooth',block:'start'}); });
-}
-
-// ============================================================
-// Builder view — 詳細モード (既存のA/M/T選択式コンポーザー)
-// ============================================================
-function populateBuilderSelects(){
-  const agents = getAgents(), mems = getMemories(), tools = getTools();
-  $('bA').innerHTML = '<option value="">— A 構成 を選択 —</option>' + agents.map(a=>`<option value="${esc(a.id)}" ${STATE.bA===a.id?'selected':''}>${esc(a.name)}</option>`).join('');
-  $('bM').innerHTML = '<option value="">— M メモリ を選択 —</option>' + mems.map(m=>`<option value="${esc(m.id)}" ${STATE.bM===m.id?'selected':''}>${esc(m.name)}</option>`).join('');
-  $('bT').innerHTML = '<option value="">— T ツール を選択 —</option>' + tools.map(t=>`<option value="${esc(t.id)}" ${STATE.bT===t.id?'selected':''}>${esc(t.name)}</option>`).join('');
-}
-function updateBuilderDescs(){
-  const a=getItem(STATE.bA), m=getItem(STATE.bM), t=getItem(STATE.bT);
-  $('bAdesc').textContent = a?a.summary:'未選択';
-  $('bMdesc').textContent = m?m.summary:'未選択';
-  $('bTdesc').textContent = t?t.summary:'未選択';
-}
-function renderBuilder(){
-  populateBuilderSelects();
-  updateBuilderDescs();
-  if(!STATE.bA || !STATE.bM || !STATE.bT){
-    $('compatBar').innerHTML = '<b>3つすべて選択すると合成ビューが表示されます</b>';
-    $('builderBody').innerHTML = '';
-    return;
-  }
-  // Compat bar
-  const am = amCell(STATE.bA, STATE.bM);
-  const at = atCell(STATE.bA, STATE.bT);
-  const rec = RECOMMENDED.find(r=>r.A===STATE.bA && r.M===STATE.bM && r.T===STATE.bT);
-  $('compatBar').innerHTML = `
-    <b>相性:</b>
-    <span class="label">A×M:</span><span class="pill ${levelPillClass(am.level)}">${levelName(am.level)}</span>
-    <span class="label">A×T:</span><span class="pill ${levelPillClass(at.level)}">${levelName(at.level)}</span>
-    ${rec?`<span class="pill green">推奨ユースケース: ${esc(rec.usecase)}</span>`:''}
-    ${am.note?`<span class="copy-note">${esc(am.note)}</span>`:''}
-    ${at.note?`<span class="copy-note">${esc(at.note)}</span>`:''}
-  `;
-  // Body: 3 parallel diagrams + combined risks
-  const a = getItem(STATE.bA), m = getItem(STATE.bM), t = getItem(STATE.bT);
-  $('builderBody').innerHTML = `
-    <div class="compose-row">
-      <section class="section"><h3>A: 制御フロー</h3>
-        <p style="font-weight:800;font-size:14px;color:#111827">${esc(a.name)}</p>
-        ${diagramHtml(a.dataFlowMermaid)}
-        <a class="pill blue click" href="#detail/${esc(a.id)}">A詳細を開く →</a>
-      </section>
-      <section class="section"><h3>M: メモリフロー</h3>
-        <p style="font-weight:800;font-size:14px;color:#111827">${esc(m.name)}</p>
-        ${diagramHtml(m.memoryFlowMermaid||m.dataFlowMermaid)}
-        <a class="pill blue click" href="#detail/${esc(m.id)}">M詳細を開く →</a>
-      </section>
-      <section class="section"><h3>T: ツール呼出フロー</h3>
-        <p style="font-weight:800;font-size:14px;color:#111827">${esc(t.name)}</p>
-        ${diagramHtml(t.dataFlowMermaid)}
-        <a class="pill blue click" href="#detail/${esc(t.id)}">T詳細を開く →</a>
-      </section>
-    </div>
-    <section class="section">
-      <h3>合成構成図 (A の構成図に M・T を割り当てたイメージ)</h3>
-      <p>主要な制御フローは A の構成、永続化は M の保存場所、外部副作用は T の通信様式で実装します。</p>
-      ${diagramHtml(synthesizeArchitecture(a,m,t))}
-    </section>
-    <section class="section combined-risks">
-      <h3>リスクと対策</h3>
-
-      <p class="rc-section-head"><span class="pill gray">視点1</span> 各部品そのもののリスク <span class="rc-muted">A・M・T を単体で見たときの論点</span></p>
-
-      ${(()=>{ const c=combineRisks(a,m,t); return `
-        <div class="rc-group">
-          <div class="rc-group__head"><span class="rc-group__tag a">A 構成</span><span class="rc-group__name">${esc(c.A.name)}</span><span class="rc-group__count">${c.A.items.length}件</span></div>
-          <div class="rc-grid">${c.A.items.map((r,i)=>rcPairHtml(r, 'A'+(i+1))).join('')}</div>
-        </div>
-        <div class="rc-group">
-          <div class="rc-group__head"><span class="rc-group__tag m">M メモリ</span><span class="rc-group__name">${esc(c.M.name)}</span><span class="rc-group__count">${c.M.items.length}件</span></div>
-          <div class="rc-grid">${c.M.items.map((r,i)=>rcPairHtml(r, 'M'+(i+1))).join('')}</div>
-        </div>
-        <div class="rc-group">
-          <div class="rc-group__head"><span class="rc-group__tag t">T ツール</span><span class="rc-group__name">${esc(c.T.name)}</span><span class="rc-group__count">${c.T.items.length}件</span></div>
-          <div class="rc-grid">${c.T.items.map((r,i)=>rcPairHtml(r, 'T'+(i+1))).join('')}</div>
-        </div>`; })()}
-
-      ${rec && rec.risksControls && rec.risksControls.length ? `
-      <p class="rc-section-head rc-section-head--key"><span class="pill red">視点2・最重要</span> この用途で組み合わせると出るリスク <span class="rc-muted">${rec.risksControls.length}件</span></p>
-      <div class="rc-key">
-        <div class="rc-grid">${rec.risksControls.map((r,i)=>rcPairHtml(r, i+1)).join('')}</div>
-      </div>` : ''}
-    </section>
-  `;
-  renderMermaidBlocks();
-}
-
-function synthesizeArchitecture(a,m,t){
-  // 簡易合成: a.architectureMermaid の Memory ラベルと Tools ラベルを差し替える
-  if(!a.architectureMermaid) return '';
-  let code = a.architectureMermaid;
-  const mPrimary = (m.memoryUse && m.memoryUse.primary) || m.memory || m.name;
-  const tName = t.name;
-  // Memory subgraph label
-  code = code.replace(/subgraph Memory\[".*?"\]/, `subgraph Memory["Memory / State<br/>選択: ${mPrimary}"]`);
-  // Tools subgraph label (if exists)
-  code = code.replace(/subgraph Tools\[".*?"\]/, `subgraph Tools["Tools / External<br/>選択: ${tName}"]`);
-  return code;
-}
-
-function combineRisks(a,m,t){
-  // A/M/T それぞれの risksControls を全件返す (slice 撤廃: 省略しない)
-  return {
-    A: { name: a.name, items: (a.risksControls||[]).map(r=>({risk:r.risk, control:r.control})) },
-    M: { name: m.name, items: (m.risksControls||[]).map(r=>({risk:r.risk, control:r.control})) },
-    T: { name: t.name, items: (t.risksControls||[]).map(r=>({risk:r.risk, control:r.control})) },
-  };
-}
-
-// ============================================================
-// Bindings
-// ============================================================
-function bind(){
-  // top nav
-  document.querySelectorAll('#topnav button').forEach(b=>{
-    b.addEventListener('click',()=>{
-      const m = b.dataset.mode;
-      if(m==='intro') navigate('intro');
-      else if(m==='usecases') navigate('usecases');
-      else if(m==='search') navigate('search/'+STATE.domain);
-      else if(m==='matrix') navigate('matrix/'+STATE.matrixKind);
-      else if(m==='builder') navigate('builder');
-    });
-  });
-  // hero / intro / brandbar CTA buttons (data-nav)
-  document.querySelectorAll('[data-nav]').forEach(b=>{
-    b.addEventListener('click',()=>{
-      const m = b.dataset.nav;
-      if(m==='usecases') navigate('usecases');
-      else if(m==='intro') navigate('intro');
-      else if(m==='builder') navigate('builder');
-      else navigate(m);
-    });
-  });
-  // builder mode toggle
-  $('modeBeginner').addEventListener('click',()=>{ STATE.builderMode='beginner'; navigate('builder'); });
-  $('modeDetail').addEventListener('click',()=>{
-    const trio = (STATE.bA&&STATE.bM&&STATE.bT) ? `${STATE.bA}+${STATE.bM}+${STATE.bT}`
-      : 'simple-chain+memory-workflow-state+rest-api';
-    STATE.builderMode='detail'; navigate('builder/'+trio);
-  });
-  // search subtabs
-  document.querySelectorAll('.tab').forEach(b=>{
-    b.addEventListener('click',()=>{
-      STATE.domain = b.dataset.domain;
-      STATE.category=STATE.placement=STATE.memory=STATE.memoryFamily=STATE.role=STATE.q='';
-      navigate('search/'+STATE.domain);
-    });
-  });
-  // search filters
-  ['category','placement','memory','memoryFamily','role'].forEach(id=>{
-    $(id).addEventListener('change',e=>{STATE[id]=e.target.value;renderSearch();});
-  });
-  $('q').addEventListener('input',e=>{STATE.q=e.target.value;renderSearch();});
-  $('reset').addEventListener('click',()=>{
-    STATE.q=STATE.category=STATE.placement=STATE.memory=STATE.memoryFamily=STATE.role='';
-    renderSearch();
-  });
-  // matrix toggle
-  document.querySelectorAll('.matrix-toggle button').forEach(b=>{
-    b.addEventListener('click',()=>{ STATE.matrixKind=b.dataset.kind; navigate('matrix/'+b.dataset.kind); });
-  });
-  // builder selects
-  $('bA').addEventListener('change',e=>{STATE.bA=e.target.value;refreshBuilderHash();});
-  $('bM').addEventListener('change',e=>{STATE.bM=e.target.value;refreshBuilderHash();});
-  $('bT').addEventListener('change',e=>{STATE.bT=e.target.value;refreshBuilderHash();});
-
-  // share current view (#3)
-  $('shareBtn').addEventListener('click',e=>shareCurrent(e.currentTarget));
-
-  // mobile filter drawer (#5)
-  const panel=$('filterPanel'), overlay=$('filterOverlay'), openBtn=$('openFilters');
-  function openDrawer(){ panel.classList.add('open'); overlay.classList.add('show'); openBtn.setAttribute('aria-expanded','true'); }
-  function closeDrawer(){ panel.classList.remove('open'); overlay.classList.remove('show'); openBtn.setAttribute('aria-expanded','false'); }
-  openBtn.addEventListener('click',openDrawer);
-  $('closeFilters').addEventListener('click',closeDrawer);
-  overlay.addEventListener('click',closeDrawer);
-
-  // Esc closes tip / drawer (#4)
-  document.addEventListener('keydown',e=>{
-    if(e.key!=='Escape') return;
-    if($('matrixTip').classList.contains('show')) closeTip();
-    else if(panel.classList.contains('open')) closeDrawer();
-  });
-
-  window.addEventListener('hashchange',applyHash);
-}
-function refreshBuilderHash(){
-  if(STATE.bA && STATE.bM && STATE.bT){
-    navigate(`builder/${STATE.bA}+${STATE.bM}+${STATE.bT}`);
-  } else {
-    updateBuilderDescs();
-    renderBuilder();
-  }
-}
-
-fetch('ai_agent_catalog_v8-1_data.json')
-  .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-  .then(d=>{
-    __assignDataset(d);
-    bind();
-    applyHash();
-  })
-  .catch(err=>{
-    // ページ全体は壊さず、メインの先頭にエラーバナーを表示する (#17.3 / #20.4)
-    try{ bind(); }catch(e){}
-    const main = document.getElementById('main');
-    const sk = document.getElementById('ucSkeleton'); if(sk) sk.remove();
-    const banner = document.createElement('div');
-    banner.className = 'err-banner';
-    banner.innerHTML = `
-      <h4>データを読み込めませんでした</h4>
-      <p>時間をおいて再読み込みしてください。ローカルで開いている場合は、<code>ai_agent_catalog_v8-1_data.json</code> を同じフォルダに置き、簡易サーバー（例：<code>python3 -m http.server</code>）から開く必要があります。</p>
-      <details><summary>開発者向け：詳細</summary><pre>${esc(String(err))}</pre></details>`;
-    const nav = document.getElementById('topnav');
-    if(nav && nav.parentNode) nav.parentNode.insertBefore(banner, nav.nextSibling);
-    else if(main) main.prepend(banner);
-  });
-</script>
+  </div>
+</footer>
 </body>
 </html>
